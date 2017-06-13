@@ -50,6 +50,7 @@ private:
 	size_t n; /**> number of taxa in the reference tree */
 	size_t n_square; /**> n*n */
 	size_t n_cube; /**> n*n*n */
+	std::unordered_map<size_t, size_t> refIdToLookupID; /**> mapping of reference tree taxa to 0..n-1 */
 };
 
 // This is only needed in case the STXXL is used
@@ -88,7 +89,7 @@ void QuartetCounterLookup::updateQuartetsThreeClades(size_t startLeafIndexS1, si
 				while (cLeafIndex != endLeafIndexS3) {
 					size_t c = eulerTourLeaves[cLeafIndex];
 #pragma omp atomic
-					lookupTable[CO(a, a2, b, c)]++;
+					lookupTable[CO(refIdToLookupID[a], refIdToLookupID[a2], refIdToLookupID[b], refIdToLookupID[c])]++;
 					cLeafIndex = (cLeafIndex + 1) % eulerTourLeaves.size();
 				}
 				bLeafIndex = (bLeafIndex + 1) % eulerTourLeaves.size();
@@ -188,17 +189,19 @@ void QuartetCounterLookup::updateQuartets(const Tree &tree, size_t nodeIdx, std:
  * @para evalTrees the set of evaluation trees
  */
 QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &evalTrees) {
-	n = refTree.node_count();
+	std::unordered_map<std::string, size_t> taxonToReferenceID;
+	n = 0;
+	for (auto it : eulertour(refTree)) {
+		if (it.node().is_leaf()) {
+			taxonToReferenceID[it.node().data<DefaultNodeData>().name] = it.node().index();
+			refIdToLookupID[it.node().index()] = n;
+			n++;
+		}
+	}
 	n_square = n * n;
 	n_cube = n_square * n;
 	// initialize the lookup table.
 	lookupTable.resize(n * n * n * n);
-	std::unordered_map<std::string, size_t> taxonToReferenceID;
-	//#pragma omp parallel for
-	for (size_t i = 0; i < n; ++i) {
-		taxonToReferenceID[refTree.node_at(i).data<DefaultNodeData>().name] = i;
-	}
-
 	unsigned int progress = 1;
 	float onePercent = (float) evalTrees.size() / 100;
 
