@@ -28,11 +28,12 @@ using namespace std;
 
 class QuartetCounterLookup {
 public:
-	QuartetCounterLookup(Tree const &refTree, TreeSet const &evalTrees);
+	QuartetCounterLookup(const Tree &refTree, const TreeSet &evalTrees);
 	~QuartetCounterLookup();
 	std::tuple<size_t, size_t, size_t> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 private:
 	size_t lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
+	void countQuartets(const TreeSet &evalTrees, const std::unordered_map<std::string, size_t> &taxonToReferenceID);
 	void updateQuartets(const Tree &tree, size_t nodeIdx, std::vector<int> &eulerTourLeaves,
 			std::vector<int> &linkToEulerLeafIndex);
 	void updateQuartetsThreeLinks(size_t link1, size_t link2, size_t link3, const Tree &tree,
@@ -50,7 +51,7 @@ private:
 	size_t n; /**> number of taxa in the reference tree */
 	size_t n_square; /**> n*n */
 	size_t n_cube; /**> n*n*n */
-	std::unordered_map<size_t, size_t> refIdToLookupID; /**> mapping of reference tree taxa to 0..n-1 */
+	std::unordered_map<size_t, size_t> refIdToLookupID;
 };
 
 // This is only needed in case the STXXL is used
@@ -184,24 +185,8 @@ void QuartetCounterLookup::updateQuartets(const Tree &tree, size_t nodeIdx, std:
 	}
 }
 
-/**
- * @param refTree the reference tree
- * @para evalTrees the set of evaluation trees
- */
-QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &evalTrees) {
-	std::unordered_map<std::string, size_t> taxonToReferenceID;
-	n = 0;
-	for (auto it : eulertour(refTree)) {
-		if (it.node().is_leaf()) {
-			taxonToReferenceID[it.node().data<DefaultNodeData>().name] = it.node().index();
-			refIdToLookupID[it.node().index()] = n;
-			n++;
-		}
-	}
-	n_square = n * n;
-	n_cube = n_square * n;
-	// initialize the lookup table.
-	lookupTable.resize(n * n * n * n);
+void QuartetCounterLookup::countQuartets(const TreeSet &evalTrees,
+		const std::unordered_map<std::string, size_t> &taxonToReferenceID) {
 	unsigned int progress = 1;
 	float onePercent = (float) evalTrees.size() / 100;
 
@@ -217,7 +202,7 @@ QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &e
 			if (it.node().is_leaf()) {
 				size_t leafIdx = it.node().index();
 				eulerTourLeaves.push_back(
-						taxonToReferenceID[evalTrees[i].tree.node_at(leafIdx).data<DefaultNodeData>().name]);
+						taxonToReferenceID.at(evalTrees[i].tree.node_at(leafIdx).data<DefaultNodeData>().name));
 			}
 			linkToEulerLeafIndex[it.link().index()] = eulerTourLeaves.size();
 		}
@@ -237,6 +222,27 @@ QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &e
 }
 
 /**
+ * @param refTree the reference tree
+ * @para evalTrees the set of evaluation trees
+ */
+QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &evalTrees) {
+	std::unordered_map<std::string, size_t> taxonToReferenceID;
+	n = 0;
+	for (auto it : eulertour(refTree)) {
+		if (it.node().is_leaf()) {
+			taxonToReferenceID[it.node().data<DefaultNodeData>().name] = it.node().index();
+			refIdToLookupID[it.node().index()] = n;
+			n++;
+		}
+	}
+	n_square = n * n;
+	n_cube = n_square * n;
+	// initialize the lookup table.
+	lookupTable.resize(n * n * n * n);
+	countQuartets(evalTrees, taxonToReferenceID);
+}
+
+/**
  * Returns the count of the quartet topology ab|cd in the evaluation trees
  * @param aIdx ID of taxon a
  * @param bIdx ID of taxon b
@@ -244,12 +250,16 @@ QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &e
  * @param dIdx ID of taxon d
  */
 size_t QuartetCounterLookup::lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx) {
+	aIdx = refIdToLookupID[aIdx];
+	bIdx = refIdToLookupID[bIdx];
+	cIdx = refIdToLookupID[cIdx];
+	dIdx = refIdToLookupID[dIdx];
 	return lookupTable[CO(aIdx, bIdx, cIdx, dIdx)] + lookupTable[CO(aIdx, bIdx, dIdx, cIdx)]
 			+ lookupTable[CO(bIdx, aIdx, cIdx, dIdx)] + lookupTable[CO(bIdx, aIdx, dIdx, cIdx)];
 }
 
 /**
- * Returns the vounts of the quartet topologies ab|cd, ac|bd, and ad|bc in the evaluation trees
+ * Returns the counts of the quartet topologies ab|cd, ac|bd, and ad|bc in the evaluation trees
  * @param aIdx ID of taxon a
  * @param bIdx ID of taxon b
  * @param cIdx ID of taxon c
@@ -262,3 +272,4 @@ std::tuple<size_t, size_t, size_t> QuartetCounterLookup::countQuartetOccurrences
 	size_t adBC = lookupQuartetCount(aIdx, dIdx, bIdx, cIdx);
 	return std::tuple<size_t, size_t, size_t>(abCD, acBD, adBC);
 }
+
