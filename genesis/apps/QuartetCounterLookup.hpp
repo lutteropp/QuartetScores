@@ -9,7 +9,7 @@
 #include <memory>
 #include "TreeInformation.hpp"
 #include <unordered_map>
-
+#include <cstdint>
 #if USE_STXXL
 #include <stxxl/vector>
 #endif
@@ -21,6 +21,8 @@ using namespace std;
 
 #define CO(a,b,c,d) (a) * n_cube + (b) * n_square + (c) * n + (d)
 
+typedef uint32_t cint;
+
 /**
  * Let n be the number of taxa in the reference tree.
  * Count occurrences of quartet topologies in the set of evaluation trees using a O(n^4) lookup table with O(1) lookup cost.
@@ -30,9 +32,9 @@ class QuartetCounterLookup {
 public:
 	QuartetCounterLookup(const Tree &refTree, const TreeSet &evalTrees);
 	~QuartetCounterLookup();
-	std::tuple<size_t, size_t, size_t> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
+	std::tuple<cint, cint, cint> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 private:
-	size_t lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
+	cint lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 	void countQuartets(const TreeSet &evalTrees, const std::unordered_map<std::string, size_t> &taxonToReferenceID);
 	void updateQuartets(const Tree &tree, size_t nodeIdx, std::vector<int> &eulerTourLeaves,
 			std::vector<int> &linkToEulerLeafIndex);
@@ -44,14 +46,14 @@ private:
 			std::vector<int> &linkToEulerLeafIndex);
 
 #if USE_STXXL
-	stxxl::VECTOR_GENERATOR<unsigned int>::result lookupTable; /**> O(n^4) lookup table storing the count of each quartet topology */
+	stxxl::VECTOR_GENERATOR<cint>::result lookupTable; /**> O(n^4) lookup table storing the count of each quartet topology */
 #else
-	std::vector<size_t> lookupTable; /**> O(n^4) lookup table storing the count of each quartet topology */
+	std::vector<cint> lookupTable; /**> O(n^4) lookup table storing the count of each quartet topology */
 #endif
 	size_t n; /**> number of taxa in the reference tree */
 	size_t n_square; /**> n*n */
 	size_t n_cube; /**> n*n*n */
-	std::unordered_map<size_t, size_t> refIdToLookupID;
+	std::vector<size_t> refIdToLookupID;
 };
 
 // This is only needed in case the STXXL is used
@@ -90,7 +92,8 @@ void QuartetCounterLookup::updateQuartetsThreeClades(size_t startLeafIndexS1, si
 				while (cLeafIndex != endLeafIndexS3) {
 					size_t c = eulerTourLeaves[cLeafIndex];
 #pragma omp atomic
-					lookupTable[CO(refIdToLookupID[a], refIdToLookupID[a2], refIdToLookupID[b], refIdToLookupID[c])]++;
+					//lookupTable[CO(refIdToLookupID[a], refIdToLookupID[a2], refIdToLookupID[b], refIdToLookupID[c])]++;
+					lookupTable[CO(a, a2, b, c)]++;
 					cLeafIndex = (cLeafIndex + 1) % eulerTourLeaves.size();
 				}
 				bLeafIndex = (bLeafIndex + 1) % eulerTourLeaves.size();
@@ -201,8 +204,10 @@ void QuartetCounterLookup::countQuartets(const TreeSet &evalTrees,
 		for (auto it : eulertour(evalTrees[i].tree)) {
 			if (it.node().is_leaf()) {
 				size_t leafIdx = it.node().index();
+				/*eulerTourLeaves.push_back(
+						taxonToReferenceID.at(evalTrees[i].tree.node_at(leafIdx).data<DefaultNodeData>().name));*/
 				eulerTourLeaves.push_back(
-						taxonToReferenceID.at(evalTrees[i].tree.node_at(leafIdx).data<DefaultNodeData>().name));
+										refIdToLookupID[taxonToReferenceID.at(evalTrees[i].tree.node_at(leafIdx).data<DefaultNodeData>().name)]);
 			}
 			linkToEulerLeafIndex[it.link().index()] = eulerTourLeaves.size();
 		}
@@ -227,6 +232,7 @@ void QuartetCounterLookup::countQuartets(const TreeSet &evalTrees,
  */
 QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &evalTrees) {
 	std::unordered_map<std::string, size_t> taxonToReferenceID;
+	refIdToLookupID.resize(refTree.node_count());
 	n = 0;
 	for (auto it : eulertour(refTree)) {
 		if (it.node().is_leaf()) {
@@ -239,7 +245,10 @@ QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &e
 	n_cube = n_square * n;
 	// initialize the lookup table.
 	lookupTable.resize(n * n * n * n);
+	//#pragma omp parallel for
+
 	countQuartets(evalTrees, taxonToReferenceID);
+	std::cout << "lookup table size: " << lookupTable.size() << "\n";
 }
 
 /**
@@ -249,7 +258,7 @@ QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &e
  * @param cIdx ID of taxon c
  * @param dIdx ID of taxon d
  */
-size_t QuartetCounterLookup::lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx) {
+cint QuartetCounterLookup::lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx) {
 	aIdx = refIdToLookupID[aIdx];
 	bIdx = refIdToLookupID[bIdx];
 	cIdx = refIdToLookupID[cIdx];
@@ -265,11 +274,10 @@ size_t QuartetCounterLookup::lookupQuartetCount(size_t aIdx, size_t bIdx, size_t
  * @param cIdx ID of taxon c
  * @param dIdx ID of taxon d
  */
-std::tuple<size_t, size_t, size_t> QuartetCounterLookup::countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx,
+std::tuple<cint, cint, cint> QuartetCounterLookup::countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx,
 		size_t dIdx) {
-	size_t abCD = lookupQuartetCount(aIdx, bIdx, cIdx, dIdx);
-	size_t acBD = lookupQuartetCount(aIdx, cIdx, bIdx, dIdx);
-	size_t adBC = lookupQuartetCount(aIdx, dIdx, bIdx, cIdx);
-	return std::tuple<size_t, size_t, size_t>(abCD, acBD, adBC);
+	cint abCD = lookupQuartetCount(aIdx, bIdx, cIdx, dIdx);
+	cint acBD = lookupQuartetCount(aIdx, cIdx, bIdx, dIdx);
+	cint adBC = lookupQuartetCount(aIdx, dIdx, bIdx, cIdx);
+	return std::tuple<cint, cint, cint>(abCD, acBD, adBC);
 }
-
