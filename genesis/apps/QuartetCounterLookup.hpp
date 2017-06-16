@@ -35,14 +35,15 @@ private:
 	CINT lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 	void countQuartets(const std::string &evalTreesPath, size_t m,
 			const std::unordered_map<std::string, size_t> &taxonToReferenceID);
-	void updateQuartets(const Tree &tree, size_t nodeIdx, std::vector<int> &eulerTourLeaves,
-			std::vector<int> &linkToEulerLeafIndex);
+	void updateQuartets(const Tree &tree, size_t nodeIdx, const std::vector<int> &eulerTourLeaves,
+			const std::vector<int> &linkToEulerLeafIndex);
 	void updateQuartetsThreeLinks(size_t link1, size_t link2, size_t link3, const Tree &tree,
-			std::vector<int> &eulerTourLeaves, std::vector<int> &linkToEulerLeafIndex);
+			const std::vector<int> &eulerTourLeaves, const std::vector<int> &linkToEulerLeafIndex);
 	void updateQuartetsThreeClades(size_t startLeafIndexS1, size_t endLeafIndexS1, size_t startLeafIndexS2,
-			size_t endLeafIndexS2, size_t startLeafIndexS3, size_t endLeafIndexS3, std::vector<int> &eulerTourLeaves);
+			size_t endLeafIndexS2, size_t startLeafIndexS3, size_t endLeafIndexS3,
+			const std::vector<int> &eulerTourLeaves);
 	std::pair<size_t, size_t> subtreeLeafIndices(size_t linkIdx, const Tree &tree,
-			std::vector<int> &linkToEulerLeafIndex);
+			const std::vector<int> &linkToEulerLeafIndex);
 
 #if USE_STXXL
 	stxxl::VECTOR_GENERATOR<CINT>::result lookupTable; /**> O(n^4) lookup table storing the count of each quartet topology */
@@ -78,7 +79,7 @@ QuartetCounterLookup<CINT>::~QuartetCounterLookup() {
 template<typename CINT>
 void QuartetCounterLookup<CINT>::updateQuartetsThreeClades(size_t startLeafIndexS1, size_t endLeafIndexS1,
 		size_t startLeafIndexS2, size_t endLeafIndexS2, size_t startLeafIndexS3, size_t endLeafIndexS3,
-		std::vector<int> &eulerTourLeaves) {
+		const std::vector<int> &eulerTourLeaves) {
 	size_t aLeafIndex = startLeafIndexS1;
 	size_t bLeafIndex = startLeafIndexS2;
 	size_t cLeafIndex = startLeafIndexS3;
@@ -120,7 +121,7 @@ void QuartetCounterLookup<CINT>::updateQuartetsThreeClades(size_t startLeafIndex
  */
 template<typename CINT>
 std::pair<size_t, size_t> QuartetCounterLookup<CINT>::subtreeLeafIndices(size_t linkIdx, const Tree &tree,
-		std::vector<int> &linkToEulerLeafIndex) {
+		const std::vector<int> &linkToEulerLeafIndex) {
 	size_t outerLinkIdx = tree.link_at(linkIdx).outer().index();
 	return {linkToEulerLeafIndex[linkIdx] % linkToEulerLeafIndex.size(), linkToEulerLeafIndex[outerLinkIdx] % linkToEulerLeafIndex.size()};
 }
@@ -138,7 +139,7 @@ std::pair<size_t, size_t> QuartetCounterLookup<CINT>::subtreeLeafIndices(size_t 
  */
 template<typename CINT>
 void QuartetCounterLookup<CINT>::updateQuartetsThreeLinks(size_t link1, size_t link2, size_t link3, const Tree &tree,
-		std::vector<int> &eulerTourLeaves, std::vector<int> &linkToEulerLeafIndex) {
+		const std::vector<int> &eulerTourLeaves, const std::vector<int> &linkToEulerLeafIndex) {
 	std::pair<size_t, size_t> subtree1 = subtreeLeafIndices(link1, tree, linkToEulerLeafIndex);
 	std::pair<size_t, size_t> subtree2 = subtreeLeafIndices(link2, tree, linkToEulerLeafIndex);
 	std::pair<size_t, size_t> subtree3 = subtreeLeafIndices(link3, tree, linkToEulerLeafIndex);
@@ -169,8 +170,8 @@ void QuartetCounterLookup<CINT>::updateQuartetsThreeLinks(size_t link1, size_t l
  * 	needed for determining first and last index of leaves belonging to a subtree.
  */
 template<typename CINT>
-void QuartetCounterLookup<CINT>::updateQuartets(const Tree &tree, size_t nodeIdx, std::vector<int> &eulerTourLeaves,
-		std::vector<int> &linkToEulerLeafIndex) {
+void QuartetCounterLookup<CINT>::updateQuartets(const Tree &tree, size_t nodeIdx,
+		const std::vector<int> &eulerTourLeaves, const std::vector<int> &linkToEulerLeafIndex) {
 	// get taxa from subtree clades at nodeIdx
 	std::vector<size_t> subtreeLinkIndices;
 	const TreeLink* actLinkPtr = &tree.node_at(nodeIdx).link();

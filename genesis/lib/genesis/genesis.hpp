@@ -113,7 +113,6 @@
 #include "genesis/tree/drawing/rectangular_layout.hpp"
 #include "genesis/tree/drawing/rectangular_tree.hpp"
 #include "genesis/tree/formats/color_writer_plugin.hpp"
-#include "genesis/tree/formats/quartet_newick_writer.hpp"
 #include "genesis/tree/formats/newick/broker.hpp"
 #include "genesis/tree/formats/newick/color_writer_plugin.hpp"
 #include "genesis/tree/formats/newick/element.hpp"

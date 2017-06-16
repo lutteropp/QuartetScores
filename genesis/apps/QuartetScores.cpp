@@ -1,4 +1,5 @@
 #include "genesis/genesis.hpp"
+#include "quartet_newick_writer.hpp"
 #include "QuartetScoreComputer.hpp"
 #include <string>
 #include <vector>
@@ -68,14 +69,11 @@ int main(int argc, char* argv[]) {
 	DefaultTreeNewickReader reader;
 	Tree referenceTree = reader.from_file(pathToReferenceTree);
 
-	/*for( auto const& tree : tree_iter(...)) {
-
-	 }*/
-
 	if (verbose) {
 		auto tp = PrinterCompact();
 		auto res = tp.print(referenceTree, []( TreeNode const& node, TreeEdge const& edge ) {
 			//return node.data<DefaultNodeData>().name + " edge: " + std::to_string(edge.index()) + " vertex: " + std::to_string(node.index());
+				(void) edge;
 				return node.data<DefaultNodeData>().name + " " + std::to_string( node.index() );
 			});
 

@@ -229,6 +229,7 @@ private:
  */
 class QuartetTreeNewickWriter
     : public NewickWriter
+    , public tree::DefaultTreeNewickWriterPlugin
     , public QuartetNewickWriterPlugin
 {
 public:
@@ -239,6 +240,7 @@ public:
 
     QuartetTreeNewickWriter()
     {
+        DefaultTreeNewickWriterPlugin::register_with( *this );
         QuartetNewickWriterPlugin::register_with( *this );
     }
 };
