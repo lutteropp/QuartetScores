@@ -16,7 +16,7 @@ using namespace tree;
 using namespace utils;
 using namespace std;
 
-// TODO FIXME: This is currently not working, for some reason.
+// TODO FIXME: This is currently not working, for some reason. Also, the code here is very old and not updated to the new interface.
 
 class QuartetCounterLookupCacheOptimized {
 public:

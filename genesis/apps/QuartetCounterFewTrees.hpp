@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Integer.hpp"
 #include "genesis/genesis.hpp"
 #include <vector>
 #include <cassert>
@@ -20,10 +19,11 @@ using namespace std;
  * Let n be the number of taxa in the reference tree and m be the number of evaluation trees.
  * Count quartet topologies for a small number of evaluation trees, with O(n*m) space and O(m) lookup cost.
  */
+template<typename CINT>
 class QuartetCounterFewTrees {
 public:
 	QuartetCounterFewTrees(Tree const &refTree, const std::string &evalTreesPath);
-	std::tuple<cint, cint, cint> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
+	std::tuple<CINT, CINT, CINT> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 private:
 	std::vector<std::unique_ptr<TreeInformation> > infos; /**> helper classes for lca and distance computation in each of the trees */
 	std::unique_ptr<TaxonMapper> taxonMapper; /**> helper class for identifying taxa throughout the trees */
@@ -34,7 +34,8 @@ private:
  * @param refTree the reference tree
  * @param evalTrees the set of evaluation trees
  */
-QuartetCounterFewTrees::QuartetCounterFewTrees(Tree const &refTree, const std::string &evalTreesPath) {
+template<typename CINT>
+QuartetCounterFewTrees<CINT>::QuartetCounterFewTrees(Tree const &refTree, const std::string &evalTreesPath) {
 	size_t n = refTree.node_count();
 	std::unordered_map<std::string, size_t> taxonToReferenceID;
 #pragma omp parallel for
@@ -70,7 +71,8 @@ QuartetCounterFewTrees::QuartetCounterFewTrees(Tree const &refTree, const std::s
  * @param cIdx the ID of the taxon c in the reference tree
  * @param dIdx the ID of the taxon d in the reference tree
  */
-std::tuple<cint, cint, cint> QuartetCounterFewTrees::countQuartetOccurrences(size_t aIdx, size_t bIdx,
+template<typename CINT>
+std::tuple<CINT, CINT, CINT> QuartetCounterFewTrees<CINT>::countQuartetOccurrences(size_t aIdx, size_t bIdx,
 		size_t cIdx, size_t dIdx) {
 	size_t q1, q2, q3;
 	q1 = q2 = q3 = 0; // q1 = ab|cd, q2 = ac|bd, q3 = ad|bc
@@ -108,5 +110,5 @@ std::tuple<cint, cint, cint> QuartetCounterFewTrees::countQuartetOccurrences(siz
 			q3++; // ad|bc
 		} // else, we have a multifurcation and the quartet has none of these three topologies.
 	}
-	return std::tuple<cint, cint, cint>(q1, q2, q3);
+	return std::tuple<CINT, CINT, CINT>(q1, q2, q3);
 }

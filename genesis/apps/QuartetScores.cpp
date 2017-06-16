@@ -11,6 +11,21 @@ using namespace genesis;
 using namespace tree;
 
 /**
+ * Count the number of evaluation trees.
+ * @param evalTreesPath path to the file containing the set of evaluation trees
+ */
+size_t countEvalTrees(const std::string &evalTreesPath) {
+	size_t count = 0;
+	utils::InputStream instream(utils::make_unique<utils::FileInputSource>(evalTreesPath));
+	auto it = NewickInputIterator(instream);
+	while (it) {
+		count++;
+		++it;
+	}
+	return count;
+}
+
+/**
  * The main method. Compute quartet scores and store the result in a tree file.
  */
 int main(int argc, char* argv[]) {
@@ -55,7 +70,7 @@ int main(int argc, char* argv[]) {
 
 	/*for( auto const& tree : tree_iter(...)) {
 
-	}*/
+	 }*/
 
 	if (verbose) {
 		auto tp = PrinterCompact();
@@ -67,11 +82,31 @@ int main(int argc, char* argv[]) {
 		std::cout << res << std::endl;
 	}
 
-	QuartetScoreComputer qsc(referenceTree, pathToEvaluationTrees, verbose);
-	std::vector<double> lqic = qsc.getLQICScores();
-	std::vector<double> qpic = qsc.getQPICScores();
-	std::vector<double> eqpic = qsc.getEQPICScores();
-
+	std::vector<double> lqic;
+	std::vector<double> qpic;
+	std::vector<double> eqpic;
+	size_t m = countEvalTrees(pathToEvaluationTrees);
+	if (m < (size_t(1) << 8)) {
+		QuartetScoreComputer<uint8_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose);
+		lqic = qsc.getLQICScores();
+		qpic = qsc.getQPICScores();
+		eqpic = qsc.getEQPICScores();
+	} else if (m < (size_t(1) << 16)) {
+		QuartetScoreComputer<uint16_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose);
+		lqic = qsc.getLQICScores();
+		qpic = qsc.getQPICScores();
+		eqpic = qsc.getEQPICScores();
+	} else if (m < (size_t(1) << 32)) {
+		QuartetScoreComputer<uint32_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose);
+		lqic = qsc.getLQICScores();
+		qpic = qsc.getQPICScores();
+		eqpic = qsc.getEQPICScores();
+	} else {
+		QuartetScoreComputer<uint64_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose);
+		lqic = qsc.getLQICScores();
+		qpic = qsc.getQPICScores();
+		eqpic = qsc.getEQPICScores();
+	}
 	// Create the writer and assign values.
 	auto writer = QuartetTreeNewickWriter();
 	writer.set_lq_ic_scores(lqic);

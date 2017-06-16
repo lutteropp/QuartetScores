@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <memory>
 #include "TreeInformation.hpp"
-#include "Integer.hpp"
 #include <unordered_map>
 #include <cstdint>
 #if USE_STXXL
@@ -26,14 +25,14 @@ using namespace std;
  * Let n be the number of taxa in the reference tree.
  * Count occurrences of quartet topologies in the set of evaluation trees using a O(n^4) lookup table with O(1) lookup cost.
  */
-
+template<typename CINT>
 class QuartetCounterLookup {
 public:
 	QuartetCounterLookup(const Tree &refTree, const std::string &evalTreesPath, size_t m);
 	~QuartetCounterLookup();
-	std::tuple<cint, cint, cint> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
+	std::tuple<CINT, CINT, CINT> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 private:
-	cint lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
+	CINT lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 	void countQuartets(const std::string &evalTreesPath, size_t m,
 			const std::unordered_map<std::string, size_t> &taxonToReferenceID);
 	void updateQuartets(const Tree &tree, size_t nodeIdx, std::vector<int> &eulerTourLeaves,
@@ -46,9 +45,9 @@ private:
 			std::vector<int> &linkToEulerLeafIndex);
 
 #if USE_STXXL
-	stxxl::VECTOR_GENERATOR<cint>::result lookupTable; /**> O(n^4) lookup table storing the count of each quartet topology */
+	stxxl::VECTOR_GENERATOR<CINT>::result lookupTable; /**> O(n^4) lookup table storing the count of each quartet topology */
 #else
-	std::vector<cint> lookupTable; /**> O(n^4) lookup table storing the count of each quartet topology */
+	std::vector<CINT> lookupTable; /**> O(n^4) lookup table storing the count of each quartet topology */
 #endif
 	size_t n; /**> number of taxa in the reference tree */
 	size_t n_square; /**> n*n */
@@ -57,7 +56,8 @@ private:
 };
 
 // This is only needed in case the STXXL is used
-QuartetCounterLookup::~QuartetCounterLookup() {
+template<typename CINT>
+QuartetCounterLookup<CINT>::~QuartetCounterLookup() {
 #if USE_STXXL
 	while (!lookupTable.empty()) {
 		lookupTable.pop_back();
@@ -75,7 +75,8 @@ QuartetCounterLookup::~QuartetCounterLookup() {
  * @param endLeafIndexS3 the last index in eulerTourLeaves that corresponds to a leaf in subtree S_3
  * @param eulerTourLeaves the leaves' IDs of the tree traversed in an euler tour order
  */
-void QuartetCounterLookup::updateQuartetsThreeClades(size_t startLeafIndexS1, size_t endLeafIndexS1,
+template<typename CINT>
+void QuartetCounterLookup<CINT>::updateQuartetsThreeClades(size_t startLeafIndexS1, size_t endLeafIndexS1,
 		size_t startLeafIndexS2, size_t endLeafIndexS2, size_t startLeafIndexS3, size_t endLeafIndexS3,
 		std::vector<int> &eulerTourLeaves) {
 	size_t aLeafIndex = startLeafIndexS1;
@@ -117,7 +118,8 @@ void QuartetCounterLookup::updateQuartetsThreeClades(size_t startLeafIndexS1, si
  * @param linkToEulerLeafIndex Mapping of each link in the tree to indices in the euler tour;
  * 	needed for determining first and last index of leaves belonging to a subtree.
  */
-std::pair<size_t, size_t> QuartetCounterLookup::subtreeLeafIndices(size_t linkIdx, const Tree &tree,
+template<typename CINT>
+std::pair<size_t, size_t> QuartetCounterLookup<CINT>::subtreeLeafIndices(size_t linkIdx, const Tree &tree,
 		std::vector<int> &linkToEulerLeafIndex) {
 	size_t outerLinkIdx = tree.link_at(linkIdx).outer().index();
 	return {linkToEulerLeafIndex[linkIdx] % linkToEulerLeafIndex.size(), linkToEulerLeafIndex[outerLinkIdx] % linkToEulerLeafIndex.size()};
@@ -134,7 +136,8 @@ std::pair<size_t, size_t> QuartetCounterLookup::subtreeLeafIndices(size_t linkId
  * @param linkToEulerLeafIndex Mapping of each link in the tree to indices in the euler tour;
  * 	needed for determining first and last index of leaves belonging to a subtree.
  */
-void QuartetCounterLookup::updateQuartetsThreeLinks(size_t link1, size_t link2, size_t link3, const Tree &tree,
+template<typename CINT>
+void QuartetCounterLookup<CINT>::updateQuartetsThreeLinks(size_t link1, size_t link2, size_t link3, const Tree &tree,
 		std::vector<int> &eulerTourLeaves, std::vector<int> &linkToEulerLeafIndex) {
 	std::pair<size_t, size_t> subtree1 = subtreeLeafIndices(link1, tree, linkToEulerLeafIndex);
 	std::pair<size_t, size_t> subtree2 = subtreeLeafIndices(link2, tree, linkToEulerLeafIndex);
@@ -165,7 +168,8 @@ void QuartetCounterLookup::updateQuartetsThreeLinks(size_t link1, size_t link2, 
  * @param linkToEulerLeafIndex Mapping of each link in the tree to indices in the euler tour;
  * 	needed for determining first and last index of leaves belonging to a subtree.
  */
-void QuartetCounterLookup::updateQuartets(const Tree &tree, size_t nodeIdx, std::vector<int> &eulerTourLeaves,
+template<typename CINT>
+void QuartetCounterLookup<CINT>::updateQuartets(const Tree &tree, size_t nodeIdx, std::vector<int> &eulerTourLeaves,
 		std::vector<int> &linkToEulerLeafIndex) {
 	// get taxa from subtree clades at nodeIdx
 	std::vector<size_t> subtreeLinkIndices;
@@ -194,7 +198,8 @@ void QuartetCounterLookup::updateQuartets(const Tree &tree, size_t nodeIdx, std:
  * @param m number of evaluation trees
  * @param taxonToReferenceID mapping of taxon names to leaf ID in reference tree
  */
-void QuartetCounterLookup::countQuartets(const std::string &evalTreesPath, size_t m,
+template<typename CINT>
+void QuartetCounterLookup<CINT>::countQuartets(const std::string &evalTreesPath, size_t m,
 		const std::unordered_map<std::string, size_t> &taxonToReferenceID) {
 	unsigned int progress = 1;
 	float onePercent = (float) m / 100;
@@ -242,7 +247,8 @@ void QuartetCounterLookup::countQuartets(const std::string &evalTreesPath, size_
  * @param evalTreesPath path to the file containing the set of evaluation trees
  * @param m the number of evaluation trees
  */
-QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, const std::string &evalTreesPath, size_t m) {
+template<typename CINT>
+QuartetCounterLookup<CINT>::QuartetCounterLookup(Tree const &refTree, const std::string &evalTreesPath, size_t m) {
 	std::unordered_map<std::string, size_t> taxonToReferenceID;
 	refIdToLookupID.resize(refTree.node_count());
 	n = 0;
@@ -270,7 +276,8 @@ QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, const std::strin
  * @param cIdx ID of taxon c
  * @param dIdx ID of taxon d
  */
-cint QuartetCounterLookup::lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx) {
+template<typename CINT>
+CINT QuartetCounterLookup<CINT>::lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx) {
 	aIdx = refIdToLookupID[aIdx];
 	bIdx = refIdToLookupID[bIdx];
 	cIdx = refIdToLookupID[cIdx];
@@ -286,10 +293,11 @@ cint QuartetCounterLookup::lookupQuartetCount(size_t aIdx, size_t bIdx, size_t c
  * @param cIdx ID of taxon c
  * @param dIdx ID of taxon d
  */
-std::tuple<cint, cint, cint> QuartetCounterLookup::countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx,
+template<typename CINT>
+std::tuple<CINT, CINT, CINT> QuartetCounterLookup<CINT>::countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx,
 		size_t dIdx) {
-	cint abCD = lookupQuartetCount(aIdx, bIdx, cIdx, dIdx);
-	cint acBD = lookupQuartetCount(aIdx, cIdx, bIdx, dIdx);
-	cint adBC = lookupQuartetCount(aIdx, dIdx, bIdx, cIdx);
-	return std::tuple<cint, cint, cint>(abCD, acBD, adBC);
+	CINT abCD = lookupQuartetCount(aIdx, bIdx, cIdx, dIdx);
+	CINT acBD = lookupQuartetCount(aIdx, cIdx, bIdx, dIdx);
+	CINT adBC = lookupQuartetCount(aIdx, dIdx, bIdx, cIdx);
+	return std::tuple<CINT, CINT, CINT>(abCD, acBD, adBC);
 }
