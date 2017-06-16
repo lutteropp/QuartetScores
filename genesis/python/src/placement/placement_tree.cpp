@@ -1,26 +1,3 @@
-/*
-    Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    Contact:
-    Lucas Czech <lucas.czech@h-its.org>
-    Exelixis Lab, Heidelberg Institute for Theoretical Studies
-    Schloss-Wolfsbrunnenweg 35, D-69118 Heidelberg, Germany
-*/
-
 /**
  * @brief
  *
@@ -28,52 +5,64 @@
  * @ingroup python
  */
 
-#include <python/src/common.hpp>
+#include <src/common.hpp>
 
-#include "lib/genesis.hpp"
+#include "genesis/genesis.hpp"
 
 using namespace ::genesis::placement;
-
-PYTHON_EXPORT_CLASS (PlacementTreeNodeData, "placement")
+/*
+PYTHON_EXPORT_CLASS( ::genesis::placement::PlacementNodeData, scope )
 {
 
     // -------------------------------------------------------------------
-    //     Class PlacementTreeNodeData
+    //     Class PlacementNodeData
     // -------------------------------------------------------------------
 
-    boost::python::class_< ::genesis::placement::PlacementTreeNodeData > ( "PlacementTreeNodeData" )
-    ;
-}
-
-PYTHON_EXPORT_CLASS (PlacementTreeEdgeData, "placement")
-{
-
-    // -------------------------------------------------------------------
-    //     Class PlacementTreeEdgeData
-    // -------------------------------------------------------------------
-
-    boost::python::class_< ::genesis::placement::PlacementTreeEdgeData > ( "PlacementTreeEdgeData" )
+    pybind11::class_< ::genesis::placement::PlacementNodeData, std::shared_ptr<::genesis::placement::PlacementNodeData> > ( scope, "PlacementNodeData" )
 
         // Public Member Functions
 
         .def(
-            "dump",
-            ( std::string ( ::genesis::placement::PlacementTreeEdgeData::* )(  ) const )( &::genesis::placement::PlacementTreeEdgeData::dump )
+            "clone",
+            ( std::unique_ptr< BaseNodeData > ( ::genesis::placement::PlacementNodeData::* )(  ) const )( &::genesis::placement::PlacementNodeData::clone ),
+            get_docstring("std::unique_ptr< BaseNodeData > ::genesis::placement::PlacementNodeData::clone () const")
+        )
+        .def_static(
+            "create",
+            ( std::unique_ptr< PlacementNodeData > ( * )(  ))( &::genesis::placement::PlacementNodeData::create )
+        )
+    ;
+}
+
+PYTHON_EXPORT_CLASS( ::genesis::placement::PlacementEdgeData, scope )
+{
+
+    // -------------------------------------------------------------------
+    //     Class PlacementEdgeData
+    // -------------------------------------------------------------------
+
+    pybind11::class_< ::genesis::placement::PlacementEdgeData, std::shared_ptr<::genesis::placement::PlacementEdgeData> > ( scope, "PlacementEdgeData" )
+
+        // Public Member Functions
+
+        .def(
+            "clone",
+            ( std::unique_ptr< BaseEdgeData > ( ::genesis::placement::PlacementEdgeData::* )(  ) const )( &::genesis::placement::PlacementEdgeData::clone ),
+            get_docstring("std::unique_ptr< BaseEdgeData > ::genesis::placement::PlacementEdgeData::clone () const")
         )
         .def(
             "edge_num",
-            ( int ( ::genesis::placement::PlacementTreeEdgeData::* )(  ) const )( &::genesis::placement::PlacementTreeEdgeData::edge_num )
+            ( int ( ::genesis::placement::PlacementEdgeData::* )(  ) const )( &::genesis::placement::PlacementEdgeData::edge_num )
         )
         .def(
             "reset_edge_num",
-            ( void ( ::genesis::placement::PlacementTreeEdgeData::* )( int ))( &::genesis::placement::PlacementTreeEdgeData::reset_edge_num ),
-            ( boost::python::arg("val") ),
-            get_docstring("void ::genesis::placement::PlacementTreeEdgeData::reset_edge_num (int val)")
+            ( void ( ::genesis::placement::PlacementEdgeData::* )( int ))( &::genesis::placement::PlacementEdgeData::reset_edge_num ),
+            pybind11::arg("val")
         )
-
-        // Operators
-
-        .def( boost::python::self != boost::python::self )
-        .def( boost::python::self == boost::python::self )
+        .def_static(
+            "create",
+            ( std::unique_ptr< PlacementEdgeData > ( * )(  ))( &::genesis::placement::PlacementEdgeData::create )
+        )
     ;
 }
+*/

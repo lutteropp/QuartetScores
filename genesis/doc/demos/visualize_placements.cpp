@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,34 +25,62 @@
  * This is the demo "Visualize Placements". See the Manual for more information.
  */
 
+#include "genesis/genesis.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "placement/formats/jplace_reader.hpp"
-#include "placement/formats/newick_writer.hpp"
-#include "placement/placement_tree.hpp"
-#include "placement/sample.hpp"
-
-#include "tree/formats/newick/color_writer_mixin.hpp"
-#include "tree/default/functions.hpp"
-
-#include "utils/core/fs.hpp"
-#include "utils/core/logging.hpp"
-
-#include "utils/formats/nexus/document.hpp"
-#include "utils/formats/nexus/taxa.hpp"
-#include "utils/formats/nexus/trees.hpp"
-#include "utils/formats/nexus/writer.hpp"
-
-#include "utils/text/string.hpp"
-#include "utils/tools/color.hpp"
-#include "utils/tools/color/gradient.hpp"
-#include "utils/tools/color/operators.hpp"
-
 using namespace genesis;
+
+// =================================================================================================
+//      Get Jplace Files From Input Path
+// =================================================================================================
+
+/**
+ * @brief Helper function that returns the path to all jplace files in a directory,
+ * or, if the input is a single file, returns only this file.
+ *
+ * This allows to call the program with either one or multiple files.
+ */
+std::vector<std::string> get_jplace_files( std::string const& input_path )
+{
+    // Prepare a vector for all jplace files we want to process.
+    std::vector<std::string> jplace_files;
+
+    if( utils::is_dir( input_path ) ) {
+
+        // If the provided path is a directory, find all jplace files in it.
+        auto all_files = utils::dir_list_files( input_path );
+        utils::erase_if( all_files, [](std::string const& file) {
+            return ! utils::ends_with( utils::to_lower( file ), ".jplace" );
+        });
+        std::sort( all_files.begin(), all_files.end() );
+
+        LOG_INFO << "Using " << all_files.size() << " jplace files:";
+        for( auto filename : all_files ) {
+            LOG_INFO << "- " << filename;
+
+            // Add all found jplace files with the correct path to the vector.
+            auto jplace_filename = utils::trim_right( input_path, "/") + "/" + filename;
+            jplace_files.push_back( jplace_filename );
+        }
+
+    } else if( utils::is_file( input_path )) {
+
+        // If the provided path is a file, use this (no check if it ends in .jplace,
+        // because it might be storted with a differnet file name).
+        jplace_files.push_back( input_path );
+        LOG_INFO << "Using jplace file " << input_path << ".";
+
+    } else {
+        throw std::runtime_error( "Invalid path: " + input_path );
+    }
+
+    return jplace_files;
+}
 
 // =================================================================================================
 //      Count Placement Mass Per Edge
@@ -118,6 +146,29 @@ std::vector<utils::Color> counts_to_colors(
     // Find the highest value in the input vector.
     auto mass_max = *std::max_element (count_vector.begin(), count_vector.end());
 
+    // Output for building the color gradient: show the color values.
+    LOG_INFO << "In order to build a color gradient, use these color stops:\n"
+             << "    0.0 -> #81bfff (light blue, no placement mass)\n"
+             << "    0.5 -> #c040be (purple, medium placement mass)\n"
+             << "    1.0 -> #000000 (black, maximum placement mass)";
+    LOG_INFO << "The edge with the maximum placement mass has a mass of " << mass_max;
+
+    // More output for the color gradient: show the label positions.
+    std::string labels = "The following list shows position on the color gradient ";
+    labels += "with their correspinding placement mass. Use this to label your color gradient.\n";
+    size_t pow_i = 0;
+    double pow_v = 0.0;
+    do {
+        pow_v = log( pow( 10, pow_i )) / log( mass_max );
+        if( pow_v <= 1.0 ) {
+            labels += "    " + utils::to_string_precise( pow_v, 6 ) + " -> ";
+            labels += utils::to_string( pow( 10, pow_i )) + "\n";
+        }
+        ++pow_i;
+    } while( pow_v <= 1.0 );
+    labels += "    1.000000 -> " + utils::to_string( mass_max ) + "\n";
+    LOG_INFO << labels;
+
     // Calculate the resulting colors.
     for( size_t i = 0; i < count_vector.size(); ++i ) {
         if( count_vector[i] > 0.0 ) {
@@ -148,13 +199,14 @@ void write_color_tree_to_nexus(
 ) {
     // We use a normal Newick writer for PlacementTrees, but also wrap it in a Color Mixin
     // in order to allow for color annotated branches.
-    using ColorWriter = tree::NewickColorWriterMixin<placement::PlacementTreeNewickWriter>;
+    auto writer = placement::PlacementTreeNewickWriter();
+    auto color_plugin = tree::NewickColorWriterPlugin();
+    color_plugin.register_with( writer );
 
     // Get the Newick representation of the tree, with color annotated branches.
-    auto tree_writer = ColorWriter();
-    tree_writer.enable_edge_nums(false);
-    tree_writer.edge_colors(colors_per_branch);
-    std::string newick_tree = tree_writer.to_string(tree);
+    writer.enable_edge_nums(false);
+    color_plugin.edge_colors(colors_per_branch);
+    std::string newick_tree = writer.to_string(tree);
 
     // Create an (empty) Nexus document.
     auto nexus_doc = utils::NexusDocument();
@@ -197,17 +249,23 @@ void write_color_tree_to_nexus(
  * files can be used here.
  *
  * If a single file is given as input, all of the above is obsolete. The filename also
- * does not need to end in ".jplace" in this case. In this case, simple this file is visualized.
+ * does not need to end in ".jplace" in this case. In this case, simply this file is visualized.
  *
  * Furthermore, as second command line argument, the user needs to provide a valid filename for the
  * output nexus file. That means, the path to the file needs to exist, but the file not (yet).
+ *
+ * The program prints output that shows the used color gradient and furthermore lists the positions
+ * on this gradient that correspond to certain placement masses. Particularly, as we use a log scale
+ * for coloring, the printed positions are multiples of ten, and finally the maximum mass, which
+ * always corresponds to the end of the color gradient, i.e., black color.
  */
 int main( int argc, char** argv )
 {
     using namespace ::genesis::placement;
 
-    // Activate logging.
+    // Activate logging, print genesis header.
     utils::Logging::log_to_stdout();
+    LOG_BOLD << genesis_header();
 
     // Check if the command line contains the right number of arguments.
     if (argc != 3) {
@@ -221,35 +279,7 @@ int main( int argc, char** argv )
     auto nexus_file = std::string( argv[2] );
 
     // Prepare a vector for all jplace files we want to process.
-    std::vector<std::string> jplace_files;
-
-    if( utils::is_dir( input_path ) ) {
-
-        // If the provided path is a directory, find all jplace files in it.
-        auto all_files = utils::dir_list_files( input_path );
-        utils::erase_if( all_files, [](std::string const& file) {
-            return ! utils::ends_with( utils::to_lower( file ), ".jplace" );
-        });
-
-        LOG_INFO << "Using " << all_files.size() << " jplace files:";
-        for( auto filename : all_files ) {
-            LOG_INFO << "- " << filename;
-
-            // Add all found jplace files with the correct path to the vector.
-            auto jplace_filename = utils::trim_right( input_path, "/") + "/" + filename;
-            jplace_files.push_back( jplace_filename );
-        }
-
-    } else if( utils::is_file( input_path )) {
-
-        // If the provided path is a file, use this (no check if it ends in .jplace,
-        // because it might be storted with a differnet file name).
-        jplace_files.push_back( input_path );
-        LOG_INFO << "Using jplace file " << input_path << ".";
-
-    } else {
-        throw std::runtime_error( "Invalid path: " + input_path );
-    }
+    auto jplace_files = get_jplace_files( input_path );
 
     // Prepare a vector that will contain the masses per edge, summed over all samples that we
     // want to process.
@@ -263,8 +293,7 @@ int main( int argc, char** argv )
     for( auto const& jplace_filename : jplace_files ) {
 
         // Read the Jplace file into a Sample object.
-        Sample sample;
-        JplaceReader().from_file(jplace_filename, sample);
+        Sample sample = JplaceReader().from_file(jplace_filename);
 
         if( placement_mass.size() == 0 ) {
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "genesis.hpp"
+#include "genesis/genesis.hpp"
 #include <vector>
 #include <memory>
 #include <algorithm>
@@ -8,7 +8,6 @@
 using namespace genesis;
 using namespace tree;
 using namespace utils;
-using namespace external;
 
 /**
  * Helper class that computes the lowest common ancestor of two nodes in respect to any given root node,

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "genesis.hpp"
+#include "genesis/genesis.hpp"
 #include <vector>
 #include <cassert>
 #include <algorithm>

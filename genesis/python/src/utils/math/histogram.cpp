@@ -1,26 +1,3 @@
-/*
-    Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    Contact:
-    Lucas Czech <lucas.czech@h-its.org>
-    Exelixis Lab, Heidelberg Institute for Theoretical Studies
-    Schloss-Wolfsbrunnenweg 35, D-69118 Heidelberg, Germany
-*/
-
 /**
  * @brief
  *
@@ -28,78 +5,94 @@
  * @ingroup python
  */
 
-#include <python/src/common.hpp>
+#include <src/common.hpp>
 
-#include "lib/genesis.hpp"
+#include "genesis/genesis.hpp"
 
 using namespace ::genesis::utils;
 
-PYTHON_EXPORT_CLASS (Histogram, "utils")
+PYTHON_EXPORT_CLASS( ::genesis::utils::Histogram, scope )
 {
 
     // -------------------------------------------------------------------
     //     Class Histogram
     // -------------------------------------------------------------------
 
-    boost::python::class_< ::genesis::utils::Histogram > ( "Histogram", boost::python::init< size_t >(( boost::python::arg("num_bins") )) )
-        .def( boost::python::init< size_t, double, double >(( boost::python::arg("num_bins"), boost::python::arg("range_min"), boost::python::arg("range_max") )) )
-        .def( boost::python::init< const std::vector< double > & >(( boost::python::arg("ranges") )) )
-        .def( boost::python::init< Histogram const & >(( boost::python::arg("") )) )
+    pybind11::class_< ::genesis::utils::Histogram, std::shared_ptr<::genesis::utils::Histogram> > ( scope, "Histogram" )
+        .def(
+            pybind11::init< size_t >(),
+            pybind11::arg("num_bins")
+        )
+        .def(
+            pybind11::init< size_t, double, double >(),
+            pybind11::arg("num_bins"),
+            pybind11::arg("range_min"),
+            pybind11::arg("range_max")
+        )
+        .def(
+            pybind11::init< const std::vector< double > & >(),
+            pybind11::arg("ranges")
+        )
+        .def(
+            pybind11::init< Histogram const & >(),
+            pybind11::arg("arg")
+        )
 
         // Public Member Functions
 
         .def(
             "accumulate",
             ( int ( ::genesis::utils::Histogram::* )( double, double ))( &::genesis::utils::Histogram::accumulate ),
-            ( boost::python::arg("x"), boost::python::arg("weight") )
+            pybind11::arg("x"),
+            pybind11::arg("weight")
         )
         .def(
             "accumulate_bin",
             ( void ( ::genesis::utils::Histogram::* )( size_t, double ))( &::genesis::utils::Histogram::accumulate_bin ),
-            ( boost::python::arg("bin"), boost::python::arg("weight") )
+            pybind11::arg("bin"),
+            pybind11::arg("weight")
         )
-        // .def(
-        //     "at",
-        //     ( double & ( ::genesis::utils::Histogram::* )( size_t ))( &::genesis::utils::Histogram::at ),
-        //     ( boost::python::arg("bin_num") ),
-        //     boost::python::return_value_policy<boost::python::reference_existing_object>()
-        // )
+        .def(
+            "at",
+            ( double & ( ::genesis::utils::Histogram::* )( size_t ))( &::genesis::utils::Histogram::at ),
+            pybind11::arg("bin_num")
+        )
         .def(
             "at",
             ( double ( ::genesis::utils::Histogram::* )( size_t ) const )( &::genesis::utils::Histogram::at ),
-            ( boost::python::arg("bin_num") )
+            pybind11::arg("bin_num")
         )
         .def(
             "bin_midpoint",
             ( double ( ::genesis::utils::Histogram::* )( size_t ) const )( &::genesis::utils::Histogram::bin_midpoint ),
-            ( boost::python::arg("bin_num") )
+            pybind11::arg("bin_num")
         )
         .def(
             "bin_range",
             ( std::pair< double, double > ( ::genesis::utils::Histogram::* )( size_t ) const )( &::genesis::utils::Histogram::bin_range ),
-            ( boost::python::arg("bin_num") )
+            pybind11::arg("bin_num")
         )
         .def(
             "bin_width",
             ( double ( ::genesis::utils::Histogram::* )( size_t ) const )( &::genesis::utils::Histogram::bin_width ),
-            ( boost::python::arg("bin_num") )
+            pybind11::arg("bin_num")
         )
         .def(
             "bins",
             ( size_t ( ::genesis::utils::Histogram::* )(  ) const )( &::genesis::utils::Histogram::bins )
         )
-        .def(
-            "cbegin",
-            ( ::genesis::utils::Histogram::const_iterator ( ::genesis::utils::Histogram::* )(  ) const )( &::genesis::utils::Histogram::cbegin )
-        )
-        .def(
-            "cend",
-            ( ::genesis::utils::Histogram::const_iterator ( ::genesis::utils::Histogram::* )(  ) const )( &::genesis::utils::Histogram::cend )
-        )
+        // .def(
+        //     "cbegin",
+        //     ( const_iterator ( ::genesis::utils::Histogram::* )(  ) const )( &::genesis::utils::Histogram::cbegin )
+        // )
+        // .def(
+        //     "cend",
+        //     ( const_iterator ( ::genesis::utils::Histogram::* )(  ) const )( &::genesis::utils::Histogram::cend )
+        // )
         .def(
             "check_range",
             ( bool ( ::genesis::utils::Histogram::* )( double ) const )( &::genesis::utils::Histogram::check_range ),
-            ( boost::python::arg("x") )
+            pybind11::arg("x")
         )
         .def(
             "clear",
@@ -108,27 +101,27 @@ PYTHON_EXPORT_CLASS (Histogram, "utils")
         .def(
             "find_bin",
             ( int ( ::genesis::utils::Histogram::* )( double ) const )( &::genesis::utils::Histogram::find_bin ),
-            ( boost::python::arg("x") )
+            pybind11::arg("x")
         )
         .def(
             "increment",
             ( int ( ::genesis::utils::Histogram::* )( double ))( &::genesis::utils::Histogram::increment ),
-            ( boost::python::arg("x") )
+            pybind11::arg("x")
         )
         .def(
             "increment_bin",
             ( void ( ::genesis::utils::Histogram::* )( size_t ))( &::genesis::utils::Histogram::increment_bin ),
-            ( boost::python::arg("bin") )
+            pybind11::arg("bin")
         )
-        .def(
-            "out_of_range_behaviour",
-            ( ::genesis::utils::Histogram::OutOfRangeBehaviour ( ::genesis::utils::Histogram::* )(  ) const )( &::genesis::utils::Histogram::out_of_range_behaviour )
-        )
-        .def(
-            "out_of_range_behaviour",
-            ( void ( ::genesis::utils::Histogram::* )( ::genesis::utils::Histogram::OutOfRangeBehaviour ))( &::genesis::utils::Histogram::out_of_range_behaviour ),
-            ( boost::python::arg("v") )
-        )
+        // .def(
+        //     "out_of_range_behaviour",
+        //     ( OutOfRangeBehaviour ( ::genesis::utils::Histogram::* )(  ) const )( &::genesis::utils::Histogram::out_of_range_behaviour )
+        // )
+        // .def(
+        //     "out_of_range_behaviour",
+        //     ( void ( ::genesis::utils::Histogram::* )( OutOfRangeBehaviour ))( &::genesis::utils::Histogram::out_of_range_behaviour ),
+        //     pybind11::arg("v")
+        // )
         .def(
             "range_max",
             ( double ( ::genesis::utils::Histogram::* )(  ) const )( &::genesis::utils::Histogram::range_max )
@@ -140,61 +133,63 @@ PYTHON_EXPORT_CLASS (Histogram, "utils")
         .def(
             "set_ranges",
             ( void ( ::genesis::utils::Histogram::* )( const std::vector< double > & ))( &::genesis::utils::Histogram::set_ranges ),
-            ( boost::python::arg("ranges") )
+            pybind11::arg("ranges")
         )
         .def(
             "set_uniform_ranges",
             ( void ( ::genesis::utils::Histogram::* )( const double, const double ))( &::genesis::utils::Histogram::set_uniform_ranges ),
-            ( boost::python::arg("min"), boost::python::arg("max") )
-        )
-        .def(
-            "swap",
-            ( void ( ::genesis::utils::Histogram::* )( Histogram & ))( &::genesis::utils::Histogram::swap ),
-            ( boost::python::arg("other") )
+            pybind11::arg("min"),
+            pybind11::arg("max")
         )
 
         // Operators
 
-        // .def(
-        //     "__getitem__",
-        //     ( double & ( ::genesis::utils::Histogram::* )( size_t ))( &::genesis::utils::Histogram::operator[] ),
-        //     ( boost::python::arg("bin_num") ),
-        //     boost::python::return_value_policy<boost::python::reference_existing_object>()
-        // )
+        // .def( pybind11::self == pybind11::self )
+        .def(
+            "__getitem__",
+            ( double & ( ::genesis::utils::Histogram::* )( size_t ))( &::genesis::utils::Histogram::operator[] ),
+            pybind11::arg("bin_num")
+        )
         .def(
             "__getitem__",
             ( double ( ::genesis::utils::Histogram::* )( size_t ) const )( &::genesis::utils::Histogram::operator[] ),
-            ( boost::python::arg("bin_num") )
+            pybind11::arg("bin_num")
         )
-        .def( boost::python::self == boost::python::self )
+        .def(
+            "__str__",
+            []( ::genesis::utils::Histogram const& obj ) -> std::string {
+                std::ostringstream s;
+                s << obj;
+                return s.str();
+            }
+        )
 
         // Iterators
 
-        // .def(
-        //     "__iter__",
-        //     boost::python::range ( &::genesis::utils::Histogram::begin, &::genesis::utils::Histogram::end )
-        // )
+        .def(
+            "__iter__",
+            []( ::genesis::utils::Histogram& obj ){
+                return pybind11::make_iterator( obj.begin(), obj.end() );
+            },
+            pybind11::keep_alive<0, 1>()
+        )
     ;
 }
 
-PYTHON_EXPORT_FUNCTIONS(utils_math_histogram_export, "utils")
+PYTHON_EXPORT_FUNCTIONS( utils_math_histogram_export, ::genesis::utils, scope )
 {
 
-    // boost::python::def(
-    //     "equal_ranges",
-    //     ( bool ( * )( Histogram const &, Histogram const & ))( &::genesis::utils::equal_ranges ),
-    //     ( boost::python::arg("lhs"), boost::python::arg("rhs") )
-    // );
+    scope.def(
+        "equal_ranges",
+        ( bool ( * )( Histogram const &, Histogram const & ))( &::genesis::utils::equal_ranges ),
+            pybind11::arg("lhs"),
+            pybind11::arg("rhs")
+    );
 
-    // boost::python::def(
-    //     "operator==",
-    //     ( bool ( * )( Histogram const &, Histogram const & ))( &::genesis::utils::operator== ),
-    //     ( boost::python::arg("lhs"), boost::python::arg("rhs") )
-    // );
-
-    boost::python::def(
+    scope.def(
         "swap",
         ( void ( * )( Histogram &, Histogram & ))( &::genesis::utils::swap ),
-        ( boost::python::arg("lhs"), boost::python::arg("rhs") )
+            pybind11::arg("lhs"),
+            pybind11::arg("rhs")
     );
 }

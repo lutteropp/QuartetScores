@@ -8,6 +8,15 @@ branches:
 
 matrix:
   include:
+    # Cannot use gcc 4.8 because of missing regex implementation.
+    # - compiler: gcc
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - ubuntu-toolchain-r-test
+    #       packages:
+    #         - g++-4.8
+    #   env: COMPILER=g++-4.8
     - compiler: gcc
       addons:
         apt:
@@ -24,6 +33,7 @@ matrix:
           packages:
             - g++-5
       env: COMPILER=g++-5
+    # Cannot use clang in travis right now because of stupid apt-get shutdown.
     # - compiler: clang
     #   addons:
     #     apt:
@@ -48,7 +58,10 @@ before_install:
   - sudo apt-get update -qq
 
 script:
+  - export GENESIS_DEBUG=1
   - mkdir build
   - cd build
   - cmake -DCMAKE_CXX_COMPILER=$COMPILER ..
   - make
+  - cd ..
+  - ./bin/test/genesis_tests

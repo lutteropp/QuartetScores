@@ -1,26 +1,3 @@
-/*
-    Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    Contact:
-    Lucas Czech <lucas.czech@h-its.org>
-    Exelixis Lab, Heidelberg Institute for Theoretical Studies
-    Schloss-Wolfsbrunnenweg 35, D-69118 Heidelberg, Germany
-*/
-
 /**
  * @brief
  *
@@ -28,61 +5,75 @@
  * @ingroup python
  */
 
-#include <python/src/common.hpp>
+#include <src/common.hpp>
 
-#include "lib/genesis.hpp"
+#include "genesis/genesis.hpp"
 
 using namespace ::genesis::placement;
 
-PYTHON_EXPORT_FUNCTIONS(placement_function_helper_export, "placement")
+PYTHON_EXPORT_FUNCTIONS( placement_function_helper_export, ::genesis::placement, scope )
 {
 
-    boost::python::def(
+    scope.def(
         "has_correct_edge_nums",
         ( bool ( * )( PlacementTree const & ))( &::genesis::placement::has_correct_edge_nums ),
-        ( boost::python::arg("tree") ),
-        get_docstring("bool ::genesis::placement::has_correct_edge_nums (PlacementTree const & tree)")
+            pybind11::arg("tree")
     );
 
-    boost::python::def(
+    scope.def(
         "validate",
         ( bool ( * )( Sample const &, bool, bool ))( &::genesis::placement::validate ),
-        ( boost::python::arg("smp"), boost::python::arg("check_values"), boost::python::arg("break_on_values") ),
-        get_docstring("bool ::genesis::placement::validate (Sample const & smp, bool check_values, bool break_on_values)")
+            pybind11::arg("smp"),
+            pybind11::arg("check_values")=(bool)(false),
+            pybind11::arg("break_on_values")=(bool)(false)
     );
 
-    boost::python::def(
+    scope.def(
         "edge_num_to_edge_map",
-        ( std::unordered_map< int, PlacementTree::EdgeType * > ( * )( PlacementTree const & ))( &::genesis::placement::edge_num_to_edge_map ),
-        ( boost::python::arg("tree") ),
-        get_docstring("std::unordered_map< int, PlacementTree::EdgeType * > ::genesis::placement::edge_num_to_edge_map (PlacementTree const & tree)")
+        ( std::unordered_map< int, PlacementTreeEdge * > ( * )( PlacementTree const & ))( &::genesis::placement::edge_num_to_edge_map ),
+            pybind11::arg("tree")
     );
 
-    boost::python::def(
+    scope.def(
         "edge_num_to_edge_map",
-        ( std::unordered_map< int, PlacementTree::EdgeType * > ( * )( Sample const & ))( &::genesis::placement::edge_num_to_edge_map ),
-        ( boost::python::arg("smp") ),
-        get_docstring("std::unordered_map< int, PlacementTree::EdgeType * > ::genesis::placement::edge_num_to_edge_map (Sample const & smp)")
+        ( std::unordered_map< int, PlacementTreeEdge * > ( * )( Sample const & ))( &::genesis::placement::edge_num_to_edge_map ),
+            pybind11::arg("smp")
     );
 
-    boost::python::def(
+    scope.def(
         "placements_per_edge",
         ( std::unordered_map< size_t, std::vector< PqueryPlacement const * > > ( * )( Sample const & ))( &::genesis::placement::placements_per_edge ),
-        ( boost::python::arg("smp") ),
-        get_docstring("std::unordered_map< size_t, std::vector< PqueryPlacement const * > > ::genesis::placement::placements_per_edge (Sample const & smp)")
+            pybind11::arg("smp")
     );
 
-    boost::python::def(
+    scope.def(
         "placements_per_edge",
         ( std::vector< PqueryPlacement const * > ( * )( Sample const &, PlacementTreeEdge const & ))( &::genesis::placement::placements_per_edge ),
-        ( boost::python::arg("smp"), boost::python::arg("edge") ),
-        get_docstring("std::vector< PqueryPlacement const * > ::genesis::placement::placements_per_edge (Sample const & smp, PlacementTreeEdge const & edge)")
+            pybind11::arg("smp"),
+            pybind11::arg("edge")
     );
 
-    boost::python::def(
+    scope.def(
         "plain_queries",
         ( std::vector< PqueryPlain > ( * )( Sample const & ))( &::genesis::placement::plain_queries ),
-        ( boost::python::arg("smp") ),
-        get_docstring("std::vector< PqueryPlain > ::genesis::placement::plain_queries (Sample const & smp)")
+            pybind11::arg("smp")
+    );
+
+    scope.def(
+        "placement_weight_per_edge",
+        ( std::vector< double > ( * )( Sample const & ))( &::genesis::placement::placement_weight_per_edge ),
+            pybind11::arg("sample")
+    );
+
+    scope.def(
+        "placement_count_per_edge",
+        ( std::vector< size_t > ( * )( Sample const & ))( &::genesis::placement::placement_count_per_edge ),
+            pybind11::arg("sample")
+    );
+
+    scope.def(
+        "reset_edge_nums",
+        ( void ( * )( PlacementTree & ))( &::genesis::placement::reset_edge_nums ),
+            pybind11::arg("tree")
     );
 }

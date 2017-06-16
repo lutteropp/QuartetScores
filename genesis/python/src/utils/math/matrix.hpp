@@ -1,26 +1,3 @@
-/*
-    Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    Contact:
-    Lucas Czech <lucas.czech@h-its.org>
-    Exelixis Lab, Heidelberg Institute for Theoretical Studies
-    Schloss-Wolfsbrunnenweg 35, D-69118 Heidelberg, Germany
-*/
-
 /**
  * @brief
  *
@@ -28,12 +5,12 @@
  * @ingroup python
  */
 
-#include <python/src/common.hpp>
+#include <src/common.hpp>
 
-#include "lib/genesis.hpp"
+#include "genesis/genesis.hpp"
 
 template <typename T>
-void PythonExportClass_Matrix(std::string name)
+void PythonExportClass_::genesis::utils::Matrix(std::string name)
 {
 
     // -------------------------------------------------------------------
@@ -44,23 +21,45 @@ void PythonExportClass_Matrix(std::string name)
 
     using MatrixType = Matrix<typename T>;
 
-    boost::python::class_< MatrixType > ( name.c_str(), boost::python::init< size_t, size_t >(( boost::python::arg("rows"), boost::python::arg("cols") )) )
-        .def( boost::python::init< size_t, size_t, T >(( boost::python::arg("rows"), boost::python::arg("cols"), boost::python::arg("init") )) )
-        .def( boost::python::init< size_t, size_t, std::initializer_list< T > const & >(( boost::python::arg("rows"), boost::python::arg("cols"), boost::python::arg("init_list") )) )
-        .def( boost::python::init< Matrix const & >(( boost::python::arg("") )) )
+    pybind11::class_< MatrixType, std::shared_ptr<MatrixType> > ( scope, name.c_str() )
+        .def(
+            pybind11::init<  >()
+        )
+        .def(
+            pybind11::init< size_t, size_t >(),
+            pybind11::arg("rows"),
+            pybind11::arg("cols")
+        )
+        .def(
+            pybind11::init< size_t, size_t, T >(),
+            pybind11::arg("rows"),
+            pybind11::arg("cols"),
+            pybind11::arg("init")
+        )
+        .def(
+            pybind11::init< size_t, size_t, std::initializer_list< T > const & >(),
+            pybind11::arg("rows"),
+            pybind11::arg("cols"),
+            pybind11::arg("init_list")
+        )
+        .def(
+            pybind11::init< Matrix const & >(),
+            pybind11::arg("arg")
+        )
 
         // Public Member Functions
 
         .def(
             "at",
             ( T & ( MatrixType::* )( const size_t, const size_t ))( &MatrixType::at ),
-            ( boost::python::arg("row"), boost::python::arg("col") ),
-            boost::python::return_value_policy<boost::python::reference_existing_object>()
+            pybind11::arg("row"),
+            pybind11::arg("col")
         )
         .def(
             "at",
             ( const T ( MatrixType::* )( const size_t, const size_t ) const )( &MatrixType::at ),
-            ( boost::python::arg("row"), boost::python::arg("col") )
+            pybind11::arg("row"),
+            pybind11::arg("col")
         )
         .def(
             "cbegin",
@@ -71,8 +70,18 @@ void PythonExportClass_Matrix(std::string name)
             ( const_iterator ( MatrixType::* )(  ) const )( &MatrixType::cend )
         )
         .def(
+            "col",
+            ( std::vector< T > ( MatrixType::* )( size_t ) const )( &MatrixType::col ),
+            pybind11::arg("index")
+        )
+        .def(
             "cols",
             ( size_t ( MatrixType::* )(  ) const )( &MatrixType::cols )
+        )
+        .def(
+            "row",
+            ( std::vector< T > ( MatrixType::* )( size_t ) const )( &MatrixType::row ),
+            pybind11::arg("index")
         )
         .def(
             "rows",
@@ -85,19 +94,22 @@ void PythonExportClass_Matrix(std::string name)
         .def(
             "swap",
             ( void ( MatrixType::* )( Matrix & ))( &MatrixType::swap ),
-            ( boost::python::arg("other") )
+            pybind11::arg("other")
         )
 
         // Operators
 
-        .def( boost::python::self != boost::python::self )
-        .def( boost::python::self == boost::python::self )
+        .def( pybind11::self != pybind11::self )
+        .def( pybind11::self == pybind11::self )
 
         // Iterators
 
         .def(
             "__iter__",
-            boost::python::range ( &MatrixType::begin, &MatrixType::end )
+            []( ::genesis::utils::Matrix& obj ){
+                return pybind11::make_iterator( obj.begin(), obj.end() );
+            },
+            pybind11::keep_alive<0, 1>()
         )
     ;
 }

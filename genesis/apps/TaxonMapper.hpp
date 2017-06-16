@@ -1,6 +1,6 @@
 #pragma once
 
-#include "genesis.hpp"
+#include "genesis/genesis.hpp"
 #include <vector>
 
 /**
@@ -10,7 +10,7 @@
 class TaxonMapper {
 public:
 	size_t taxonEvalID(size_t treeID, size_t taxonID);
-	TaxonMapper(Tree const &refTree, TreeSet const& evalTrees, std::vector<size_t> const &taxonIDs);
+	TaxonMapper(Tree const &refTree, const std::string &evalTreesPath, std::vector<size_t> const &taxonIDs);
 private:
 	/**
 	 * First index represents the evaluation tree, second index represents the taxon index in the reference tree.
@@ -47,28 +47,33 @@ size_t TaxonMapper::taxonEvalID(size_t treeID, size_t taxonID) {
 
 /**
  * @param refTree the reference tree
- * @param evalTrees the set of evaluation trees
+ * @param evalTreesPaths path to the file containing the set of evaluation trees
  * @param taxonIDs the taxon IDs in the reference tree
  */
-TaxonMapper::TaxonMapper(Tree const &refTree, TreeSet const& evalTrees, std::vector<size_t> const &taxonIDs) {
-	taxonEvaluationMappings.resize(evalTrees.size());
-	numNodes.resize(evalTrees.size());
+TaxonMapper::TaxonMapper(Tree const &refTree, const std::string &evalTreesPath, std::vector<size_t> const &taxonIDs) {
 	numNodesReference = refTree.node_count();
 	std::unordered_map<std::string, size_t> taxonToReferenceID;
 	for (size_t i = 0; i < taxonIDs.size(); ++i) {
 		taxonToReferenceID[refTree.node_at(taxonIDs[i]).data<DefaultNodeData>().name] = taxonIDs[i];
 	}
-	for (size_t i = 0; i < evalTrees.size(); ++i) {
-		numNodes[i] = evalTrees[i].tree.node_count();
+
+	utils::InputStream instream(utils::make_unique < utils::FileInputSource > (evalTreesPath));
+	auto itTree = NewickInputIterator(instream);
+	while (itTree) { // iterate over the set of evaluation trees
+		Tree const& tree = *itTree;
+
+		numNodes.push_back(tree.node_count());
 		std::vector<size_t> taxonMappings(refTree.node_count(), std::numeric_limits<size_t>::max());
-		for (size_t j = 0; j < evalTrees[i].tree.node_count(); ++j) {
-			if (evalTrees[i].tree.node_at(j).is_leaf()) {
-				std::string leafName = evalTrees[i].tree.node_at(j).data<DefaultNodeData>().name;
+		for (size_t j = 0; j < tree.node_count(); ++j) {
+			if (tree.node_at(j).is_leaf()) {
+				std::string leafName = tree.node_at(j).data<DefaultNodeData>().name;
 				if (taxonToReferenceID.find(leafName) != taxonToReferenceID.end()) {
-					taxonMappings[taxonToReferenceID[leafName]] = evalTrees[i].tree.node_at(j).index();
+					taxonMappings[taxonToReferenceID[leafName]] = tree.node_at(j).index();
 				}
 			}
 		}
-		taxonEvaluationMappings[i] = taxonMappings;
+		taxonEvaluationMappings.push_back(taxonMappings);
+
+		++itTree;
 	}
 }

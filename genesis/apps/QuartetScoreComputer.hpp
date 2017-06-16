@@ -1,6 +1,6 @@
 #pragma once
 
-#include "genesis.hpp"
+#include "genesis/genesis.hpp"
 #include <vector>
 #include <cassert>
 #include <algorithm>
@@ -37,11 +37,13 @@ public:
  */
 class QuartetScoreComputer {
 public:
-	QuartetScoreComputer(Tree const &refTree, TreeSet const &evalTrees, bool verboseOutput);
+	QuartetScoreComputer(Tree const &refTree, const std::string &evalTreesPath, bool verboseOutput);
 	std::vector<double> getLQICScores();
 	std::vector<double> getQPICScores();
 	std::vector<double> getEQPICScores();
 private:
+	size_t countEvalTrees(const std::string& evalTreesPath);
+
 	double log_score(size_t q1, size_t q2, size_t q3);
 	void computeQuartetScoresBifurcating();
 
@@ -53,12 +55,11 @@ private:
 	void processNodePair(size_t uIdx, size_t vIdx);
 	std::tuple<size_t, size_t, size_t> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 
-
 	std::pair<size_t, size_t> subtreeLeafIndices(size_t linkIdx);
 
 	Tree referenceTree; /**< the reference tree */
 	size_t rootIdx; /**< ID of the genesis root node in the reference tree */
-	TreeSet evaluationTrees; /**< a set of evaluation trees */
+	//TreeSet evaluationTrees; /**< a set of evaluation trees */
 	bool useLookupTable; /**< toggles usage of a lookup table versus usage of the distance-based method for few trees */
 
 	bool verbose;
@@ -328,7 +329,7 @@ void QuartetScoreComputer::computeQuartetScoresBifurcatingQuartets() {
 						if (it.is_lca())
 							continue;
 #pragma omp critical
-							LQICScores[it.edge().index()] = std::min(LQICScores[it.edge().index()], qic);
+						LQICScores[it.edge().index()] = std::min(LQICScores[it.edge().index()], qic);
 					}
 				}
 			}
@@ -361,7 +362,7 @@ void QuartetScoreComputer::computeQuartetScoresBifurcatingQuartets() {
 				if (it.is_lca())
 					continue;
 #pragma omp critical
-					EQPICScores[it.edge().index()] = std::min(EQPICScores[it.edge().index()], qpic);
+				EQPICScores[it.edge().index()] = std::min(EQPICScores[it.edge().index()], qpic);
 			}
 		}
 	} // ***** Code for QP-IC and EQP-IC scores, finalizing, end
@@ -447,7 +448,7 @@ void QuartetScoreComputer::processNodePair(size_t uIdx, size_t vIdx) {
 						if (it.is_lca())
 							continue;
 #pragma omp critical
-							LQICScores[it.edge().index()] = std::min(LQICScores[it.edge().index()], qic);
+						LQICScores[it.edge().index()] = std::min(LQICScores[it.edge().index()], qic);
 					}
 
 					dLeafIndex = (dLeafIndex + 1) % eulerTourLeaves.size();
@@ -482,7 +483,7 @@ void QuartetScoreComputer::processNodePair(size_t uIdx, size_t vIdx) {
 		if (it.is_lca())
 			continue;
 #pragma omp critical
-			EQPICScores[it.edge().index()] = std::min(EQPICScores[it.edge().index()], qpic);
+		EQPICScores[it.edge().index()] = std::min(EQPICScores[it.edge().index()], qpic);
 	}
 }
 
@@ -491,7 +492,7 @@ void QuartetScoreComputer::processNodePair(size_t uIdx, size_t vIdx) {
  */
 void QuartetScoreComputer::computeQuartetScoresBifurcating() {
 	// Process all pairs of inner nodes
-	#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < referenceTree.node_count(); ++i) {
 		if (!referenceTree.node_at(i).is_inner())
 			continue;
@@ -580,7 +581,7 @@ void QuartetScoreComputer::computeQuartetScoresMultifurcating() {
 						if (it.is_lca())
 							continue;
 #pragma omp critical
-							LQICScores[it.edge().index()] = std::min(LQICScores[it.edge().index()], qic);
+						LQICScores[it.edge().index()] = std::min(LQICScores[it.edge().index()], qic);
 					}
 				}
 			}
@@ -609,18 +610,33 @@ inline size_t getTotalSystemMemory() {
 }
 
 /**
+ * Count the number of evaluation trees.
+ * @param evalTreesPath path to the file containing the set of evaluation trees
+ */
+size_t QuartetScoreComputer::countEvalTrees(const std::string &evalTreesPath) {
+	size_t count = 0;
+	utils::InputStream instream(utils::make_unique<utils::FileInputSource>(evalTreesPath));
+	auto it = NewickInputIterator(instream);
+	while (it) {
+		count++;
+		++it;
+	}
+	return count;
+}
+
+/**
  * @param refTree the reference tree
- * @param evalTrees the set of evaluation trees
+ * @param evalTrees path to the file containing the set of evaluation trees
  * @param verboseOutput print some additional (debug) information
  */
-QuartetScoreComputer::QuartetScoreComputer(Tree const &refTree, TreeSet const &evalTrees, bool verboseOutput) {
+QuartetScoreComputer::QuartetScoreComputer(Tree const &refTree, const std::string &evalTreesPath, bool verboseOutput) {
 	referenceTree = refTree;
-	evaluationTrees = evalTrees;
 	rootIdx = referenceTree.root_node().index();
 
 	verbose = verboseOutput;
+	size_t m = countEvalTrees(evalTreesPath);
 
-	std::cout << "There are " << evaluationTrees.size() << " evaluation trees.\n";
+	std::cout << "There are " << m << " evaluation trees.\n";
 
 	std::cout << "Building subtree informations for reference tree..." << std::endl;
 	informationReferenceTree = make_unique<TreeInformation>(referenceTree);
@@ -632,14 +648,13 @@ QuartetScoreComputer::QuartetScoreComputer(Tree const &refTree, TreeSet const &e
 		}
 		linkToEulerLeafIndex[it.link().index()] = eulerTourLeaves.size();
 	}
+	size_t n = eulerTourLeaves.size();
 
 	std::cout << "Finished precomputing subtree informations in reference tree.\n";
-	std::cout << "The reference tree has " << eulerTourLeaves.size() << " taxa.\n";
+	std::cout << "The reference tree has " << n << " taxa.\n";
 
-	size_t n = eulerTourLeaves.size();
-	size_t m = evaluationTrees.size();
 	//estimate memory requirements for lookup table
-	size_t memoryLookup = n * n * n * n * sizeof(size_t);
+	size_t memoryLookup = n * n * n * n * sizeof(cint);
 	//estimate memory requirements for few trees
 	size_t memoryFewTrees = m * n * 4 * sizeof(size_t);
 	size_t estimatedMemory = getTotalSystemMemory();
@@ -649,17 +664,16 @@ QuartetScoreComputer::QuartetScoreComputer(Tree const &refTree, TreeSet const &e
 	std::cout << "  Distance and LCA approach: " << memoryFewTrees << std::endl;
 	std::cout << "  Estimated available memory: " << estimatedMemory << std::endl;
 
-
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
 	if (memoryLookup < estimatedMemory / 1.5) {
 		std::cout << "Using lookup table.\n";
-		quartetCounterLookup = make_unique<QuartetCounterLookup>(refTree, evalTrees);
+		quartetCounterLookup = make_unique<QuartetCounterLookup>(refTree, evalTreesPath, m);
 		//quartetCounterLookup = make_unique<QuartetCounterLookupCacheOptimized>(refTree, evalTrees);
 		useLookupTable = true;
 	} else {
 		std::cout << "Using distance and LCA approach.\n";
-		quartetCounterFewTrees = make_unique<QuartetCounterFewTrees>(refTree, evalTrees);
+		quartetCounterFewTrees = make_unique<QuartetCounterFewTrees>(refTree, evalTreesPath);
 		useLookupTable = false;
 	}
 
@@ -667,7 +681,7 @@ QuartetScoreComputer::QuartetScoreComputer(Tree const &refTree, TreeSet const &e
 
 	std::cout << "Finished counting quartets.\n";
 	std::cout << "It took: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()
-				<< " microseconds." << std::endl;
+			<< " microseconds." << std::endl;
 
 	begin = std::chrono::steady_clock::now();
 
@@ -700,5 +714,5 @@ QuartetScoreComputer::QuartetScoreComputer(Tree const &refTree, TreeSet const &e
 
 	std::cout << "Finished computing scores.\n";
 	std::cout << "It took: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()
-					<< " microseconds." << std::endl;
+			<< " microseconds." << std::endl;
 }

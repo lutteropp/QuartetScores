@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,33 +28,31 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "lib/placement/formats/jplace_reader.hpp"
-#include "lib/placement/formats/newick_reader.hpp"
-#include "lib/placement/function/functions.hpp"
-#include "lib/placement/function/helper.hpp"
-#include "lib/placement/function/operators.hpp"
-#include "lib/placement/sample.hpp"
-#include "lib/placement/simulator/functions.hpp"
-#include "lib/placement/simulator/simulator.hpp"
-#include "lib/tree/formats/newick/reader.hpp"
+#include "genesis/placement/formats/jplace_reader.hpp"
+#include "genesis/placement/formats/newick_reader.hpp"
+#include "genesis/placement/function/functions.hpp"
+#include "genesis/placement/function/helper.hpp"
+#include "genesis/placement/function/operators.hpp"
+#include "genesis/placement/sample.hpp"
+#include "genesis/placement/simulator/functions.hpp"
+#include "genesis/placement/simulator/simulator.hpp"
+#include "genesis/tree/formats/newick/reader.hpp"
 
 using namespace genesis;
 using namespace genesis::placement;
 
 TEST(PlacementSimulator, Simple)
 {
-    auto tree = PlacementTree();
-    EXPECT_TRUE( PlacementTreeNewickReader().from_string(
-        "((B:2.0{0},(D:2.0{1},E:2.0{2})C:2.0{3})A:2.0{4},F:2.0{5},(H:2.0{6},I:2.0{7})G:2.0{8})R:2.0{9};",
-        tree
-    ));
+    auto tree = PlacementTreeNewickReader().from_string(
+        "((B:2.0{0},(D:2.0{1},E:2.0{2})C:2.0{3})A:2.0{4},F:2.0{5},(H:2.0{6},I:2.0{7})G:2.0{8})R:2.0{9};"
+    );
 
     Sample smp(tree);
     EXPECT_EQ   (0, total_placement_count(smp));
@@ -71,11 +69,9 @@ TEST(PlacementSimulator, Simple)
 TEST(PlacementSimulator, LeavesOnly)
 {
     // Build a simple tree.
-    auto tree = PlacementTree();
-    EXPECT_TRUE( PlacementTreeNewickReader().from_string(
-        "((B:2.0{0},(D:2.0{1},E:2.0{2})C:2.0{3})A:2.0{4},F:2.0{5},(H:2.0{6},I:2.0{7})G:2.0{8})R:2.0{9};",
-        tree
-    ));
+    auto tree = PlacementTreeNewickReader().from_string(
+        "((B:2.0{0},(D:2.0{1},E:2.0{2})C:2.0{3})A:2.0{4},F:2.0{5},(H:2.0{6},I:2.0{7})G:2.0{8})R:2.0{9};"
+    );
 
     Sample smp(tree);
     Simulator sim;
@@ -106,8 +102,7 @@ TEST(PlacementSimulator, Learning)
     std::string infile  = environment->data_dir + "placement/test_a.jplace";
 
     // Read the Jplace file into a Sample object.
-    Sample sample;
-    JplaceReader().from_file( infile, sample );
+    Sample sample = JplaceReader().from_file( infile );
 
     // Learn simulation parameters.
     auto sim = Simulator();
@@ -132,7 +127,7 @@ TEST(PlacementSimulator, Learning)
         placement_number_weights.end(),
         0
     );
-    EXPECT_EQ( sample.pquery_size(), sum_extra_placement_weights );
+    EXPECT_EQ( sample.size(), sum_extra_placement_weights );
 
     // Check sum of path lengths weights.
     // This check is a bit more complicatted. We accumulate the weights that denote the distribution

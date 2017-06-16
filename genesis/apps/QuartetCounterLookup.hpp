@@ -2,12 +2,13 @@
 
 #define USE_STXXL FALSE
 
-#include "genesis.hpp"
+#include "genesis/genesis.hpp"
 #include <vector>
 #include <cassert>
 #include <algorithm>
 #include <memory>
 #include "TreeInformation.hpp"
+#include "Integer.hpp"
 #include <unordered_map>
 #include <cstdint>
 #if USE_STXXL
@@ -21,8 +22,6 @@ using namespace std;
 
 #define CO(a,b,c,d) (a) * n_cube + (b) * n_square + (c) * n + (d)
 
-typedef uint32_t cint;
-
 /**
  * Let n be the number of taxa in the reference tree.
  * Count occurrences of quartet topologies in the set of evaluation trees using a O(n^4) lookup table with O(1) lookup cost.
@@ -30,12 +29,13 @@ typedef uint32_t cint;
 
 class QuartetCounterLookup {
 public:
-	QuartetCounterLookup(const Tree &refTree, const TreeSet &evalTrees);
+	QuartetCounterLookup(const Tree &refTree, const std::string &evalTreesPath, size_t m);
 	~QuartetCounterLookup();
 	std::tuple<cint, cint, cint> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 private:
 	cint lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
-	void countQuartets(const TreeSet &evalTrees, const std::unordered_map<std::string, size_t> &taxonToReferenceID);
+	void countQuartets(const std::string &evalTreesPath, size_t m,
+			const std::unordered_map<std::string, size_t> &taxonToReferenceID);
 	void updateQuartets(const Tree &tree, size_t nodeIdx, std::vector<int> &eulerTourLeaves,
 			std::vector<int> &linkToEulerLeafIndex);
 	void updateQuartetsThreeLinks(size_t link1, size_t link2, size_t link3, const Tree &tree,
@@ -188,49 +188,61 @@ void QuartetCounterLookup::updateQuartets(const Tree &tree, size_t nodeIdx, std:
 	}
 }
 
-void QuartetCounterLookup::countQuartets(const TreeSet &evalTrees,
+/**
+ * Fill the lookup table by counting quartet topologies in the set of evaluation trees.
+ * @param evalTreesPath path to the file containing the set of evaluation trees
+ * @param m number of evaluation trees
+ * @param taxonToReferenceID mapping of taxon names to leaf ID in reference tree
+ */
+void QuartetCounterLookup::countQuartets(const std::string &evalTreesPath, size_t m,
 		const std::unordered_map<std::string, size_t> &taxonToReferenceID) {
 	unsigned int progress = 1;
-	float onePercent = (float) evalTrees.size() / 100;
+	float onePercent = (float) m / 100;
 
-#pragma omp parallel for
-	for (size_t i = 0; i < evalTrees.size(); ++i) {
-		size_t nEval = evalTrees[i].tree.node_count();
+	utils::InputStream instream(utils::make_unique<utils::FileInputSource>(evalTreesPath));
+	auto itTree = NewickInputIterator(instream, DefaultTreeNewickReader());
+	size_t i = 0;
+	while (itTree) { // iterate over the set of evaluation trees
+		Tree const& tree = *itTree;
+
+		size_t nEval = tree.node_count();
 
 		// do an euler tour through the tree
 		std::vector<int> eulerTourLeaves; // directly containing the mapped IDs from the reference
 		std::vector<int> linkToEulerLeafIndex;
-		linkToEulerLeafIndex.resize(evalTrees[i].tree.link_count());
-		for (auto it : eulertour(evalTrees[i].tree)) {
+		linkToEulerLeafIndex.resize(tree.link_count());
+		for (auto it : eulertour(tree)) {
 			if (it.node().is_leaf()) {
 				size_t leafIdx = it.node().index();
-				/*eulerTourLeaves.push_back(
-						taxonToReferenceID.at(evalTrees[i].tree.node_at(leafIdx).data<DefaultNodeData>().name));*/
 				eulerTourLeaves.push_back(
-										refIdToLookupID[taxonToReferenceID.at(evalTrees[i].tree.node_at(leafIdx).data<DefaultNodeData>().name)]);
+						refIdToLookupID[taxonToReferenceID.at(tree.node_at(leafIdx).data<DefaultNodeData>().name)]);
 			}
 			linkToEulerLeafIndex[it.link().index()] = eulerTourLeaves.size();
 		}
 
+#pragma omp parallel for schedule(dynamic)
 		for (size_t j = 0; j < nEval; ++j) {
-			if (!evalTrees[i].tree.node_at(j).is_leaf()) {
-				updateQuartets(evalTrees[i].tree, j, eulerTourLeaves, linkToEulerLeafIndex);
+			if (!tree.node_at(j).is_leaf()) {
+				updateQuartets(tree, j, eulerTourLeaves, linkToEulerLeafIndex);
 			}
 		}
 
 		if (i > progress * onePercent) {
 			std::cout << "Counting quartets... " << progress << "%" << std::endl;
-#pragma omp atomic
 			progress++;
 		}
+
+		++itTree;
+		++i;
 	}
 }
 
 /**
  * @param refTree the reference tree
- * @para evalTrees the set of evaluation trees
+ * @param evalTreesPath path to the file containing the set of evaluation trees
+ * @param m the number of evaluation trees
  */
-QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &evalTrees) {
+QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, const std::string &evalTreesPath, size_t m) {
 	std::unordered_map<std::string, size_t> taxonToReferenceID;
 	refIdToLookupID.resize(refTree.node_count());
 	n = 0;
@@ -247,7 +259,7 @@ QuartetCounterLookup::QuartetCounterLookup(Tree const &refTree, TreeSet const &e
 	lookupTable.resize(n * n * n * n);
 	//#pragma omp parallel for
 
-	countQuartets(evalTrees, taxonToReferenceID);
+	countQuartets(evalTreesPath, m, taxonToReferenceID);
 	std::cout << "lookup table size: " << lookupTable.size() << "\n";
 }
 

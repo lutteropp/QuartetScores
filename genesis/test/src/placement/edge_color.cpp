@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,22 +28,23 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <string>
 
-#include "lib/placement/formats/edge_color.hpp"
-#include "lib/placement/formats/jplace_reader.hpp"
-#include "lib/placement/formats/newick_writer.hpp"
-#include "lib/placement/formats/phyloxml_writer.hpp"
-#include "lib/placement/sample.hpp"
-#include "lib/tree/default/functions.hpp"
-#include "lib/tree/formats/newick/color_writer_mixin.hpp"
-#include "lib/tree/formats/phyloxml/color_writer_mixin.hpp"
-#include "lib/utils/formats/nexus/document.hpp"
-#include "lib/utils/formats/nexus/taxa.hpp"
-#include "lib/utils/formats/nexus/trees.hpp"
-#include "lib/utils/formats/nexus/writer.hpp"
+#include "genesis/placement/formats/edge_color.hpp"
+#include "genesis/placement/formats/jplace_reader.hpp"
+#include "genesis/placement/formats/newick_writer.hpp"
+#include "genesis/tree/formats/phyloxml/writer.hpp"
+#include "genesis/placement/sample.hpp"
+#include "genesis/tree/default/functions.hpp"
+#include "genesis/tree/default/phyloxml_writer.hpp"
+#include "genesis/tree/formats/newick/color_writer_plugin.hpp"
+#include "genesis/tree/formats/phyloxml/color_writer_plugin.hpp"
+#include "genesis/utils/formats/nexus/document.hpp"
+#include "genesis/utils/formats/nexus/taxa.hpp"
+#include "genesis/utils/formats/nexus/trees.hpp"
+#include "genesis/utils/formats/nexus/writer.hpp"
 
 using namespace genesis;
 using namespace genesis::placement;
@@ -57,14 +58,14 @@ TEST( PlacementTreeEdgeColor, CountGradientPhyloxml )
 
     std::string infile = environment->data_dir + "placement/test_a.jplace";
 
-    Sample map;
-    EXPECT_NO_THROW (JplaceReader().from_file(infile, map));
+    Sample map = JplaceReader().from_file(infile);
 
-    typedef PhyloxmlColorWriterMixin<PlacementTreePhyloxmlWriter> ColoredPlacementTreePhyloxmlWriter;
+    auto writer = tree::DefaultTreePhyloxmlWriter();
+    auto color_plugin = PhyloxmlColorWriterPlugin();
+    color_plugin.register_with( writer );
 
-    auto proc = ColoredPlacementTreePhyloxmlWriter();
-    proc.edge_colors( placement_color_count_gradient( map ));
-    std::string out = proc.to_string(map.tree());
+    color_plugin.edge_colors( placement_color_count_gradient( map ));
+    std::string out = writer.to_string(map.tree());
 
     // At least one element in the output should have the color for the edge with most placements.
     EXPECT_TRUE( out.find("<red>255</red>")  != std::string::npos );
@@ -78,14 +79,15 @@ TEST( PlacementTreeEdgeColor, CountGradientNewick )
 
     std::string infile = environment->data_dir + "placement/test_a.jplace";
 
-    Sample map;
-    EXPECT_NO_THROW (JplaceReader().from_file(infile, map));
+    Sample map = JplaceReader().from_file(infile);
 
-    typedef NewickColorWriterMixin<PlacementTreeNewickWriter> ColoredPlacementTreeNewickWriter;
+    // Create a writer and add a color plugin.
+    auto writer = PlacementTreeNewickWriter();
+    auto color_plugin = NewickColorWriterPlugin();
+    color_plugin.register_with( writer );
 
-    auto proc = ColoredPlacementTreeNewickWriter();
-    proc.edge_colors( placement_color_count_gradient( map ));
-    std::string out = proc.to_string(map.tree());
+    color_plugin.edge_colors( placement_color_count_gradient( map ));
+    std::string out = writer.to_string(map.tree());
 
     // At least one element in the output should have the color for the edge with most placements.
     EXPECT_TRUE( out.find("color=#ff0000") != std::string::npos );
@@ -98,15 +100,16 @@ TEST( PlacementTreeEdgeColor, CountGradientNexus )
 
     std::string infile = environment->data_dir + "placement/test_a.jplace";
 
-    Sample map;
-    EXPECT_NO_THROW (JplaceReader().from_file(infile, map));
+    Sample map = JplaceReader().from_file(infile);
 
-    typedef NewickColorWriterMixin<PlacementTreeNewickWriter> ColoredPlacementTreeNewickWriter;
+    // Create a writer and add a color plugin.
+    auto writer = PlacementTreeNewickWriter();
+    auto color_plugin = NewickColorWriterPlugin();
+    color_plugin.register_with( writer );
 
-    auto proc = ColoredPlacementTreeNewickWriter();
-    proc.edge_colors( placement_color_count_gradient( map ));
-    proc.enable_edge_nums(false);
-    std::string tree_out = proc.to_string(map.tree());
+    color_plugin.edge_colors( placement_color_count_gradient( map ));
+    writer.enable_edge_nums(false);
+    std::string tree_out = writer.to_string(map.tree());
 
     auto doc = NexusDocument();
 
@@ -123,8 +126,8 @@ TEST( PlacementTreeEdgeColor, CountGradientNexus )
 
     std::ostringstream buffer;
 
-    auto writer = NexusWriter();
-    writer.to_stream( doc, buffer );
+    auto nexus_writer = NexusWriter();
+    nexus_writer.to_stream( doc, buffer );
     auto nexus_out = buffer.str();
 
     EXPECT_TRUE( nexus_out.find("color=#ff0000") != std::string::npos );

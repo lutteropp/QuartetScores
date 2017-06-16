@@ -1,5 +1,5 @@
 # Genesis - A toolkit for working with phylogenetic data.
-# Copyright (C) 2014-2016 Lucas Czech
+# Copyright (C) 2014-2017 Lucas Czech
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,10 +49,10 @@ build: build/CMakeCache.txt
 # This ensures that all new files are compiled, even when doing incremental builds.
 update:
 	@echo "Running make with new files..."
-	@touch lib/CMakeLists.txt
+	@touch lib/genesis/CMakeLists.txt
 	@touch apps/CMakeLists.txt
-	@touch python/src/CMakeLists.txt
-	@touch test/src/CMakeLists.txt
+	@touch python/CMakeLists.txt
+	@touch test/CMakeLists.txt
 	$(MAKE) -s -C build
 .PHONY: update
 
@@ -61,6 +61,4 @@ clean:
 	@echo "Running clean..."
 	@rm -rf bin
 	@rm -rf build
-	@rm -rf python/module
-	@rm -rf test/bin
 .PHONY: clean

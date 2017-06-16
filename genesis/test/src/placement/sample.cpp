@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,28 +28,26 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <memory>
 
-#include "lib/placement/formats/jplace_reader.hpp"
-#include "lib/placement/formats/newick_reader.hpp"
-#include "lib/placement/function/functions.hpp"
-#include "lib/placement/function/helper.hpp"
-#include "lib/placement/function/operators.hpp"
-#include "lib/placement/sample.hpp"
-#include "lib/tree/formats/newick/reader.hpp"
+#include "genesis/placement/formats/jplace_reader.hpp"
+#include "genesis/placement/formats/newick_reader.hpp"
+#include "genesis/placement/function/functions.hpp"
+#include "genesis/placement/function/helper.hpp"
+#include "genesis/placement/function/operators.hpp"
+#include "genesis/placement/sample.hpp"
+#include "genesis/tree/formats/newick/reader.hpp"
 
 using namespace genesis;
 using namespace genesis::placement;
 
 TEST(Sample, WithTree)
 {
-    auto tree = PlacementTree();
-    EXPECT_TRUE( PlacementTreeNewickReader().from_string(
-        "((B:2.0{0},(D:2.0{1},E:2.0{2})C:2.0{3})A:2.0{4},F:2.0{5},(H:2.0{6},I:2.0{7})G:2.0{8})R:2.0{9};",
-        tree
-    ));
+    auto tree = PlacementTreeNewickReader().from_string(
+        "((B:2.0{0},(D:2.0{1},E:2.0{2})C:2.0{3})A:2.0{4},F:2.0{5},(H:2.0{6},I:2.0{7})G:2.0{8})R:2.0{9};"
+    );
 
     Sample smp(tree);
     EXPECT_EQ   (0, total_placement_count(smp));
@@ -68,7 +66,7 @@ void test_sample_stats (
 ) {
     EXPECT_TRUE (validate(smp, true, false));
 
-    EXPECT_EQ (expected_pquery_size,    smp.pquery_size());
+    EXPECT_EQ (expected_pquery_size,    smp.size());
     EXPECT_EQ (expected_placement_size, total_placement_count(smp));
 
     size_t name_count = 0;
@@ -85,8 +83,7 @@ TEST(Sample, MergeDuplicatesSimple)
 
     // Read file.
     std::string infile = environment->data_dir + "placement/duplicates_a.jplace";
-    Sample smp;
-    EXPECT_NO_THROW( JplaceReader().from_file(infile, smp) );
+    Sample smp = JplaceReader().from_file(infile);
 
     // Check before merging.
     test_sample_stats(smp, 7, 8, 7);
@@ -105,8 +102,7 @@ TEST(Sample, MergeDuplicatesTransitive)
 
     // Read file.
     std::string infile = environment->data_dir + "placement/duplicates_b.jplace";
-    Sample smp;
-    EXPECT_NO_THROW( JplaceReader().from_file(infile, smp) );
+    Sample smp = JplaceReader().from_file(infile);
 
     // Check before merging.
     test_sample_stats(smp, 7, 10, 11);

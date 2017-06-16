@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,18 +28,18 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <string>
 #include <vector>
 
-#include "lib/tree/default/functions.hpp"
-#include "lib/tree/default/newick_reader.hpp"
-#include "lib/tree/default/tree.hpp"
-#include "lib/tree/formats/newick/reader.hpp"
-#include "lib/tree/function/functions.hpp"
-#include "lib/tree/tree.hpp"
-#include "lib/utils/text/string.hpp"
+#include "genesis/tree/default/functions.hpp"
+#include "genesis/tree/default/newick_reader.hpp"
+#include "genesis/tree/default/tree.hpp"
+#include "genesis/tree/formats/newick/reader.hpp"
+#include "genesis/tree/function/functions.hpp"
+#include "genesis/tree/tree.hpp"
+#include "genesis/utils/text/string.hpp"
 
 using namespace genesis;
 using namespace tree;
@@ -52,8 +52,7 @@ void TestSubtreeSize( size_t link_index, size_t out_subtree_size )
 {
     std::string input = "((B,(D,E)C)A,F,(H,I)G)R;";
 
-    Tree tree;
-    DefaultTreeNewickReader().from_string( input, tree );
+    Tree tree = DefaultTreeNewickReader().from_string( input );
 
     auto st_size = subtree_size( tree, tree.link_at( link_index ));
     EXPECT_EQ( out_subtree_size, st_size ) << " with link index " << link_index;
@@ -89,8 +88,7 @@ void TestSubtreeSizes( std::string node_name, std::vector<size_t> out_sizes )
 {
     std::string input = "((B,(D,E)C)A,F,(H,I)G)R;";
 
-    Tree tree;
-    DefaultTreeNewickReader().from_string( input, tree );
+    Tree tree = DefaultTreeNewickReader().from_string( input );
 
     auto node = find_node( tree, node_name );
     ASSERT_NE( nullptr, node );
@@ -121,8 +119,7 @@ void TestSubtreeMaxPathHeight( std::string node_name, size_t out_size )
 {
     std::string input = "((B,(D,E)C)A,F,(H,I)G)R;";
 
-    Tree tree;
-    DefaultTreeNewickReader().from_string( input, tree );
+    Tree tree = DefaultTreeNewickReader().from_string( input );
 
     auto node = find_node( tree, node_name );
     ASSERT_NE( nullptr, node );
@@ -146,6 +143,17 @@ TEST( TreeFunctions, SubtreeMaxPathHeight )
     TestSubtreeMaxPathHeight( "I", 0 );
 }
 
+TEST( TreeFunctions, SubtreeMaxPathHeights )
+{
+    std::string input = "((B,(D,E)C)A,F,(H,I)G)R;";
+
+    Tree tree = DefaultTreeNewickReader().from_string( input );
+
+    auto heights     = subtree_max_path_heights( tree );
+    auto exp_heights = std::vector<size_t>({ 3, 1, 0, 0, 0, 2, 1, 0, 0, 0 });
+    EXPECT_EQ( exp_heights, heights );
+}
+
 // =================================================================================================
 //     Misc
 // =================================================================================================
@@ -154,8 +162,7 @@ void TestTreeLCA( std::string node_name_a, std::string node_name_b, std::string 
 {
     std::string input = "((B,(D,E)C)A,F,(H,I)G)R;";
 
-    Tree tree;
-    DefaultTreeNewickReader().from_string( input, tree );
+    Tree tree = DefaultTreeNewickReader().from_string( input );
 
     auto node_a = find_node( tree, node_name_a );
     auto node_b = find_node( tree, node_name_b );

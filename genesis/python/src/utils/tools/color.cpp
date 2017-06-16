@@ -1,26 +1,3 @@
-/*
-    Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    Contact:
-    Lucas Czech <lucas.czech@h-its.org>
-    Exelixis Lab, Heidelberg Institute for Theoretical Studies
-    Schloss-Wolfsbrunnenweg 35, D-69118 Heidelberg, Germany
-*/
-
 /**
  * @brief
  *
@@ -28,22 +5,35 @@
  * @ingroup python
  */
 
-#include <python/src/common.hpp>
+#include <src/common.hpp>
 
-#include "lib/genesis.hpp"
+#include "genesis/genesis.hpp"
 
 using namespace ::genesis::utils;
 
-PYTHON_EXPORT_CLASS (Color, "utils")
+PYTHON_EXPORT_CLASS( ::genesis::utils::Color, scope )
 {
 
     // -------------------------------------------------------------------
     //     Class Color
     // -------------------------------------------------------------------
 
-    boost::python::class_< ::genesis::utils::Color > ( "Color", boost::python::init<  >(  ) )
-        .def( boost::python::init< unsigned char, unsigned char, unsigned char >(( boost::python::arg("r"), boost::python::arg("g"), boost::python::arg("b") )) )
-        .def( boost::python::init< Color const & >(( boost::python::arg("") )) )
+    pybind11::class_< ::genesis::utils::Color, std::shared_ptr<::genesis::utils::Color> > ( scope, "Color" )
+        .def(
+            pybind11::init<  >(),
+            get_docstring("::genesis::utils::Color::Color ()")
+        )
+        .def(
+            pybind11::init< unsigned char, unsigned char, unsigned char >(),
+            pybind11::arg("r"),
+            pybind11::arg("g"),
+            pybind11::arg("b"),
+            get_docstring("::genesis::utils::Color::Color (unsigned char r, unsigned char g, unsigned char b)")
+        )
+        .def(
+            pybind11::init< Color const & >(),
+            pybind11::arg("arg")
+        )
 
         // Public Member Functions
 
@@ -54,7 +44,7 @@ PYTHON_EXPORT_CLASS (Color, "utils")
         .def(
             "b",
             ( void ( ::genesis::utils::Color::* )( unsigned char ))( &::genesis::utils::Color::b ),
-            ( boost::python::arg("value") )
+            pybind11::arg("value")
         )
         .def(
             "g",
@@ -63,7 +53,7 @@ PYTHON_EXPORT_CLASS (Color, "utils")
         .def(
             "g",
             ( void ( ::genesis::utils::Color::* )( unsigned char ))( &::genesis::utils::Color::g ),
-            ( boost::python::arg("value") )
+            pybind11::arg("value")
         )
         .def(
             "r",
@@ -72,34 +62,48 @@ PYTHON_EXPORT_CLASS (Color, "utils")
         .def(
             "r",
             ( void ( ::genesis::utils::Color::* )( unsigned char ))( &::genesis::utils::Color::r ),
-            ( boost::python::arg("value") )
+            pybind11::arg("value")
         )
         .def(
             "swap",
             ( void ( ::genesis::utils::Color::* )( Color & ))( &::genesis::utils::Color::swap ),
-            ( boost::python::arg("other") )
+            pybind11::arg("other")
+        )
+
+        // Operators
+
+        .def(
+            "__str__",
+            []( ::genesis::utils::Color const& obj ) -> std::string {
+                std::ostringstream s;
+                s << obj;
+                return s.str();
+            }
         )
     ;
 }
 
-PYTHON_EXPORT_FUNCTIONS(utils_tools_color_export, "utils")
+PYTHON_EXPORT_FUNCTIONS( utils_tools_color_export, ::genesis::utils, scope )
 {
 
-    boost::python::def(
+    scope.def(
         "operator!=",
         ( bool ( * )( Color const &, Color const & ))( &::genesis::utils::operator!= ),
-        ( boost::python::arg("lhs"), boost::python::arg("rhs") )
+            pybind11::arg("lhs"),
+            pybind11::arg("rhs")
     );
 
-    boost::python::def(
+    scope.def(
         "operator==",
         ( bool ( * )( Color const &, Color const & ))( &::genesis::utils::operator== ),
-        ( boost::python::arg("lhs"), boost::python::arg("rhs") )
+            pybind11::arg("lhs"),
+            pybind11::arg("rhs")
     );
 
-    boost::python::def(
+    scope.def(
         "swap",
         ( void ( * )( Color &, Color & ))( &::genesis::utils::swap ),
-        ( boost::python::arg("lhs"), boost::python::arg("rhs") )
+            pybind11::arg("lhs"),
+            pybind11::arg("rhs")
     );
 }

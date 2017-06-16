@@ -1,26 +1,3 @@
-/*
-    Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    Contact:
-    Lucas Czech <lucas.czech@h-its.org>
-    Exelixis Lab, Heidelberg Institute for Theoretical Studies
-    Schloss-Wolfsbrunnenweg 35, D-69118 Heidelberg, Germany
-*/
-
 /**
  * @brief
  *
@@ -28,54 +5,54 @@
  * @ingroup python
  */
 
-#include <python/src/common.hpp>
+#include <src/common.hpp>
 
-#include "lib/genesis.hpp"
+#include "genesis/genesis.hpp"
 
 using namespace ::genesis::tree;
 
-PYTHON_EXPORT_CLASS (DefaultTreeNodeData, "tree")
+PYTHON_EXPORT_CLASS( ::genesis::tree::DefaultNodeData, scope )
 {
 
     // -------------------------------------------------------------------
-    //     Class DefaultTreeNodeData
+    //     Class DefaultNodeData
     // -------------------------------------------------------------------
 
-    boost::python::class_< ::genesis::tree::DefaultTreeNodeData > ( "DefaultTreeNodeData" )
+    pybind11::class_< ::genesis::tree::DefaultNodeData, std::shared_ptr<::genesis::tree::DefaultNodeData> > ( scope, "DefaultNodeData" )
 
         // Public Member Functions
 
         .def(
-            "dump",
-            ( std::string ( ::genesis::tree::DefaultTreeNodeData::* )(  ) const )( &::genesis::tree::DefaultTreeNodeData::dump )
+            "clone",
+            ( std::unique_ptr< BaseNodeData > ( ::genesis::tree::DefaultNodeData::* )(  ) const )( &::genesis::tree::DefaultNodeData::clone ),
+            get_docstring("std::unique_ptr< BaseNodeData > ::genesis::tree::DefaultNodeData::clone () const")
         )
-
-        // Operators
-
-        .def( boost::python::self != boost::python::self )
-        .def( boost::python::self == boost::python::self )
+        .def_static(
+            "create",
+            ( std::unique_ptr< DefaultNodeData > ( * )(  ))( &::genesis::tree::DefaultNodeData::create )
+        )
     ;
 }
 
-PYTHON_EXPORT_CLASS (DefaultTreeEdgeData, "tree")
+PYTHON_EXPORT_CLASS( ::genesis::tree::DefaultEdgeData, scope )
 {
 
     // -------------------------------------------------------------------
-    //     Class DefaultTreeEdgeData
+    //     Class DefaultEdgeData
     // -------------------------------------------------------------------
 
-    boost::python::class_< ::genesis::tree::DefaultTreeEdgeData > ( "DefaultTreeEdgeData" )
+    pybind11::class_< ::genesis::tree::DefaultEdgeData, std::shared_ptr<::genesis::tree::DefaultEdgeData> > ( scope, "DefaultEdgeData" )
 
         // Public Member Functions
 
         .def(
-            "dump",
-            ( std::string ( ::genesis::tree::DefaultTreeEdgeData::* )(  ) const )( &::genesis::tree::DefaultTreeEdgeData::dump )
+            "clone",
+            ( std::unique_ptr< BaseEdgeData > ( ::genesis::tree::DefaultEdgeData::* )(  ) const )( &::genesis::tree::DefaultEdgeData::clone ),
+            get_docstring("std::unique_ptr< BaseEdgeData > ::genesis::tree::DefaultEdgeData::clone () const")
         )
-
-        // Operators
-
-        .def( boost::python::self != boost::python::self )
-        .def( boost::python::self == boost::python::self )
+        .def_static(
+            "create",
+            ( std::unique_ptr< DefaultEdgeData > ( * )(  ))( &::genesis::tree::DefaultEdgeData::create )
+        )
     ;
 }

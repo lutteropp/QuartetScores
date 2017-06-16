@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,20 +28,23 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <memory>
 #include <string>
 #include <unordered_set>
 
-#include "lib/placement/formats/jplace_reader.hpp"
-#include "lib/placement/formats/newick_reader.hpp"
-#include "lib/placement/function/functions.hpp"
-#include "lib/placement/function/helper.hpp"
-#include "lib/placement/function/operators.hpp"
-#include "lib/placement/sample.hpp"
-#include "lib/tree/default/tree.hpp"
-#include "lib/tree/formats/newick/reader.hpp"
+#include "genesis/placement/formats/jplace_reader.hpp"
+#include "genesis/placement/formats/newick_reader.hpp"
+#include "genesis/placement/function/functions.hpp"
+#include "genesis/placement/function/helper.hpp"
+#include "genesis/placement/function/operators.hpp"
+#include "genesis/placement/function/tree.hpp"
+#include "genesis/placement/sample.hpp"
+#include "genesis/tree/default/tree.hpp"
+#include "genesis/tree/default/newick_writer.hpp"
+#include "genesis/tree/formats/newick/reader.hpp"
+#include "genesis/tree/formats/newick/writer.hpp"
 
 using namespace genesis;
 using namespace genesis::placement;
@@ -53,8 +56,7 @@ TEST( SampleFunctions, FilterPlacements )
 
     // Read file.
     std::string infile = environment->data_dir + "placement/duplicates_b.jplace";
-    Sample smp;
-    EXPECT_NO_THROW( JplaceReader().from_file(infile, smp) );
+    Sample smp = JplaceReader().from_file(infile);
 
     // Check before filtering.
     EXPECT_EQ( 10, total_placement_count(smp) );
@@ -64,29 +66,52 @@ TEST( SampleFunctions, FilterPlacements )
     EXPECT_EQ( 8, total_placement_count(smp) );
 
     // Re-read the file.
-    EXPECT_NO_THROW( JplaceReader().from_file(infile, smp) );
+    smp = JplaceReader().from_file(infile);
 
     // Filter max number of placements and check result.
     filter_n_max_weight_placements( smp, 1 );
     EXPECT_EQ( 7, total_placement_count(smp) );
 
     // Re-read the file.
-    EXPECT_NO_THROW( JplaceReader().from_file(infile, smp) );
+    smp = JplaceReader().from_file(infile);
 
     // Filter max number of placements and check result.
     filter_min_accumulated_weight( smp, 0.6 );
     EXPECT_EQ( 8, total_placement_count(smp) );
 }
 
-TEST( SampleFunctions, FilterPqueryNames )
+TEST( SampleFunctions, FilterPqueryNameRegex )
 {
     // Skip test if no data availabe.
     NEEDS_TEST_DATA;
 
     // Read file.
     std::string infile = environment->data_dir + "placement/duplicates_b.jplace";
-    Sample smp;
-    EXPECT_NO_THROW( JplaceReader().from_file(infile, smp) );
+    Sample smp = JplaceReader().from_file(infile);
+
+    // Check before filtering.
+    EXPECT_EQ( 10, total_placement_count(smp) );
+
+    // Keep list.
+    filter_pqueries_keeping_names( smp, "[ac]" );
+    EXPECT_EQ( 6, total_placement_count(smp) );
+
+    // Re-read the file.
+    smp = JplaceReader().from_file(infile);
+
+    // Remove list.
+    filter_pqueries_removing_names( smp, "[ac]" );
+    EXPECT_EQ( 4, total_placement_count(smp) );
+}
+
+TEST( SampleFunctions, FilterPqueryNameLists )
+{
+    // Skip test if no data availabe.
+    NEEDS_TEST_DATA;
+
+    // Read file.
+    std::string infile = environment->data_dir + "placement/duplicates_b.jplace";
+    Sample smp = JplaceReader().from_file(infile);
 
     // Check before filtering.
     EXPECT_EQ( 10, total_placement_count(smp) );
@@ -97,7 +122,7 @@ TEST( SampleFunctions, FilterPqueryNames )
     EXPECT_EQ( 6, total_placement_count(smp) );
 
     // Re-read the file.
-    EXPECT_NO_THROW( JplaceReader().from_file(infile, smp) );
+    smp = JplaceReader().from_file(infile);
 
     // Remove list.
     std::unordered_set<std::string> remove_list = { "a", "c" };
@@ -111,12 +136,10 @@ TEST( SampleFunctions, FilterPqueryNameSets )
     NEEDS_TEST_DATA;
 
     // Read files.
-    std::string infile_1 = environment->data_dir + "placement/duplicates_a.jplace";
-    std::string infile_2 = environment->data_dir + "placement/duplicates_b.jplace";
-    Sample sample_1;
-    Sample sample_2;
-    EXPECT_NO_THROW( JplaceReader().from_file( infile_1, sample_1 ));
-    EXPECT_NO_THROW( JplaceReader().from_file( infile_2, sample_2 ));
+    std::string const infile_1 = environment->data_dir + "placement/duplicates_a.jplace";
+    std::string const infile_2 = environment->data_dir + "placement/duplicates_b.jplace";
+    auto sample_1 = JplaceReader().from_file( infile_1 );
+    auto sample_2 = JplaceReader().from_file( infile_2 );
 
     // Checks before filtering.
     EXPECT_EQ(  8, total_placement_count( sample_1 ));
@@ -128,13 +151,13 @@ TEST( SampleFunctions, FilterPqueryNameSets )
     EXPECT_EQ(  8, total_placement_count( sample_2 ));
 
     // Re-read the files.
-    EXPECT_NO_THROW( JplaceReader().from_file( infile_1, sample_1 ));
-    EXPECT_NO_THROW( JplaceReader().from_file( infile_2, sample_2 ));
+    auto sample_3 = JplaceReader().from_file( infile_1 );
+    auto sample_4 = JplaceReader().from_file( infile_2 );
 
     // Symmetric difference.
-    filter_pqueries_differing_names( sample_1, sample_2 );
-    EXPECT_EQ(  0, total_placement_count( sample_1 ));
-    EXPECT_EQ(  2, total_placement_count( sample_2 ));
+    filter_pqueries_differing_names( sample_3, sample_4 );
+    EXPECT_EQ(  0, total_placement_count( sample_3 ));
+    EXPECT_EQ(  2, total_placement_count( sample_4 ));
 }
 
 TEST( SampleFunctions, ConvertFromDefaultTree )
@@ -143,14 +166,38 @@ TEST( SampleFunctions, ConvertFromDefaultTree )
     NEEDS_TEST_DATA;
 
     // Read and process a normal newick tree.
-    tree::DefaultTree def_tree;
-    std::string infile = environment->data_dir + "tree/distances.newick";
-    tree::DefaultTreeNewickReader().from_file(infile, def_tree);
+    std::string const infile = environment->data_dir + "tree/distances.newick";
+    auto const def_tree = tree::DefaultTreeNewickReader().from_file( infile );
 
     // Convert it to a tree that is usable for samples.
-    auto place_tree = convert_to_placement_tree( def_tree );
+    auto const place_tree = convert_default_tree_to_placement_tree( def_tree );
 
     // Check if the tree is correct.
     EXPECT_EQ( 13, place_tree.node_count() );
     EXPECT_TRUE( has_correct_edge_nums( place_tree ));
+}
+
+TEST( SampleTree, LabelledTree )
+{
+    // Skip test if no data availabe.
+    NEEDS_TEST_DATA;
+
+    // Get sample.
+    std::string const infile = environment->data_dir + "placement/test_c.jplace";
+    auto const sample = JplaceReader().from_file( infile );
+
+    // Pre-checks
+    EXPECT_EQ(  7, sample.size() );
+    EXPECT_EQ( 10, sample.tree().node_count() );
+    EXPECT_EQ(  9, sample.tree().edge_count() );
+
+    // Get and check multifurcating tree.
+    auto lm_tree = labelled_tree( sample, false );
+    EXPECT_EQ( 25, lm_tree.node_count() );
+    EXPECT_EQ( 24, lm_tree.edge_count() );
+
+    // Get and check fully resolved tree.
+    auto lf_tree = labelled_tree( sample, true );
+    EXPECT_EQ( 26, lf_tree.node_count() );
+    EXPECT_EQ( 25, lf_tree.edge_count() );
 }

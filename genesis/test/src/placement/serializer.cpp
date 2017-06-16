@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,17 +28,17 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <cstdio>
 #include <memory>
 #include <string>
 
-#include "lib/placement/formats/jplace_reader.hpp"
-#include "lib/placement/formats/serializer.hpp"
-#include "lib/placement/function/functions.hpp"
-#include "lib/placement/function/helper.hpp"
-#include "lib/placement/sample.hpp"
+#include "genesis/placement/formats/jplace_reader.hpp"
+#include "genesis/placement/formats/serializer.hpp"
+#include "genesis/placement/function/functions.hpp"
+#include "genesis/placement/function/helper.hpp"
+#include "genesis/placement/sample.hpp"
 
 using namespace genesis;
 using namespace genesis::placement;
@@ -53,8 +53,7 @@ TEST(SampleSerializer, SaveAndLoad)
     std::string tmpfile = environment->data_dir + "placement/test_a.bplace";
 
     // Prepare a Sample with data.
-    Sample smp_save;
-    EXPECT_NO_THROW (JplaceReader().from_file(infile, smp_save));
+    Sample smp_save = JplaceReader().from_file(infile);
     EXPECT_EQ   (5, total_placement_count(smp_save));
     EXPECT_TRUE (validate(smp_save, true, false));
 
@@ -62,8 +61,7 @@ TEST(SampleSerializer, SaveAndLoad)
     EXPECT_NO_THROW( SampleSerializer::save(smp_save, tmpfile) );
 
     // Load again.
-    Sample smp_load;
-    EXPECT_NO_THROW( SampleSerializer::load(tmpfile, smp_load) );
+    Sample smp_load = SampleSerializer::load( tmpfile );
 
     // Check for correctly read data.
     EXPECT_EQ   (5, total_placement_count(smp_load));

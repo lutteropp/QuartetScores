@@ -1,7 +1,7 @@
-Placement {#placement}
+Placement {#tutorials_placement}
 ===========
 
-# Evolutionary Placement {#placement_epa}
+# Evolutionary Placement {#tutorials_placement_epa}
 
 Metagenomic studies often need to biologically classify millions of DNA sequences, for example
 so-called *short reads*. The assignment of those reads to known reference sequences helps to assess
@@ -23,7 +23,7 @@ The EPA takes as input:
  *  A species *tree* (usually inferred from the reference sequences).
  *  Aligned *query sequences* (e.g., Illumina reads).
 
-![EPA input data.](epa_input.png)
+![EPA input data.](placement/epa_input.png)
 
 The algorithm finds the most likely (via maximum likelihood) insertion positions for every query
 sequence on the reference tree. The resulting assignment of a query sequence to a branch is
@@ -34,19 +34,20 @@ The likelihoods of placement positions are usually transformed into the *likelih
 For a given query sequence, those values sum up to 1.0 for all branches of the tree.
 They can thus be seen as a probability distribution of possible placement positions on the tree.
 
-![Placement positions for one query sequence.](epa_placement.png)
+![Placement positions for one query sequence.](placement/epa_placement.png)
 
 The set of placements for a query sequence is called a *Pquery*. It contains a name (usually, that
 is the name of the original query sequence) and the placements with their features (e.g., an ID of
 the edge where the placement is located, its likelihood, etc.).
 See [[3]](#placement_references_3) for details.
 
-# Samples {#placement_samples}
+# Samples {#tutorials_placement_samples}
 
 Genesis has classes and functions to work with all relevant data of evolutionary placement.
 This tutorial focuses on the actual placement data, that is, Pqueries with their placement
 positions.
-See the tutorial pages @subpage tree and @subpage sequence for details on those related topics.
+See the tutorial pages @ref tutorials_tree_basics and @ref tutorials_sequence for details on those
+related topics.
 
 The most important class for evolutionary placement is the @ref genesis::placement::Sample "Sample".
 A sample is a representation of a whole `jplace` file: It stores the
@@ -60,8 +61,7 @@ To read the data from a `jplace` file into a Sample, use a
 using namespace genesis::placement;
 
 // Read a jplace file into a Sample object.
-Sample sample;
-JplaceReader().from_file( "path/to/file.jplace", sample );
+Sample sample = JplaceReader().from_file( "path/to/file.jplace" );
 ~~~
 
 Each Pquery contains the @ref genesis::placement::PqueryPlacement "Placements" of a query sequence,
@@ -90,7 +90,7 @@ You can add Pqueries or find them like this:
 
 ~~~{.cpp}
 // Add a new Pquery with a name and a placement.
-auto new_pquery = sample.add_pquery();
+auto new_pquery = sample.add();
 new_pquery.add_name( "drosophila" );
 new_pquery.add_placement( sample.tree().edge_at( 0 ));
 
@@ -129,7 +129,7 @@ You can find the whole code listing of this tutorial at
 
 See the API reference for details and for more functions and classes related to this topic.
 
-# References {#placement_references}
+# References {#tutorials_placement_references}
 
 Please refer to the following articles for more information on phylogenetic placement of short
 reads:
@@ -138,12 +138,15 @@ reads:
 > **Performance, accuracy, and web server for evolutionary placement of short sequence reads
 > under maximum likelihood**,
 > *Syst. Biol., vol. 60, no. 3, pp. 291–302, 2011*.
+> [DOI: 10.1093/sysbio/syr010](http://dx.doi.org/10.1093/sysbio/syr010)
 
 > <a name="placement_references_2">`[2]`</a> F. A. Matsen, R. B. Kodner, and E. V. Armbrust,
 > **pplacer: linear time maximum-likelihood and Bayesian phylogenetic placement of sequences
 > onto a fixed reference tree**,
 > *BMC Bioinformatics, vol. 11, no. 1, p. 538, 2010*.
+> [DOI: 10.1186/1471-2105-11-538](http://dx.doi.org/10.1186/1471-2105-11-538)
 
 > <a name="placement_references_3">`[3]`</a> F. A. Matsen, N. G. Hoffman, A. Gallagher, and A. Stamatakis,
 > **A format for phylogenetic placements**,
 > *PLoS One, vol. 7, no. 2, pp. 1–4, Jan. 2012*.
+> [DOI: 10.1371/journal.pone.0031009](http://dx.doi.org/10.1371/journal.pone.0031009)

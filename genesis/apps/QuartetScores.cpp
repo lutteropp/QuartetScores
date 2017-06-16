@@ -1,4 +1,4 @@
-#include "genesis.hpp"
+#include "genesis/genesis.hpp"
 #include "QuartetScoreComputer.hpp"
 #include <string>
 #include <vector>
@@ -6,8 +6,6 @@
 #include <fstream>
 
 #include <chrono>
-
-#include "tree/formats/quartet_newick_writer.hpp"
 
 using namespace genesis;
 using namespace tree;
@@ -52,11 +50,12 @@ int main(int argc, char* argv[]) {
 	}
 
 	//read trees
-	Tree referenceTree;
 	DefaultTreeNewickReader reader;
-	reader.from_file(pathToReferenceTree, referenceTree);
-	TreeSet evaluationTrees;
-	reader.from_file(pathToEvaluationTrees, evaluationTrees);
+	Tree referenceTree = reader.from_file(pathToReferenceTree);
+
+	/*for( auto const& tree : tree_iter(...)) {
+
+	}*/
 
 	if (verbose) {
 		auto tp = PrinterCompact();
@@ -68,13 +67,13 @@ int main(int argc, char* argv[]) {
 		std::cout << res << std::endl;
 	}
 
-	QuartetScoreComputer qsc(referenceTree, evaluationTrees, verbose);
+	QuartetScoreComputer qsc(referenceTree, pathToEvaluationTrees, verbose);
 	std::vector<double> lqic = qsc.getLQICScores();
 	std::vector<double> qpic = qsc.getQPICScores();
 	std::vector<double> eqpic = qsc.getEQPICScores();
 
 	// Create the writer and assign values.
-	auto writer = QuartetNewickWriter();
+	auto writer = QuartetTreeNewickWriter();
 	writer.set_lq_ic_scores(lqic);
 	if (!eqpic.empty()) { // bifurcating tree
 		writer.set_eqp_ic_scores(eqpic);

@@ -1,26 +1,3 @@
-/*
-    Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    Contact:
-    Lucas Czech <lucas.czech@h-its.org>
-    Exelixis Lab, Heidelberg Institute for Theoretical Studies
-    Schloss-Wolfsbrunnenweg 35, D-69118 Heidelberg, Germany
-*/
-
 /**
  * @brief
  *
@@ -28,40 +5,61 @@
  * @ingroup python
  */
 
-#include <python/src/common.hpp>
+#include <src/common.hpp>
 
-#include "lib/genesis.hpp"
+#include "genesis/genesis.hpp"
 
 using namespace ::genesis::utils;
 
-PYTHON_EXPORT_CLASS (HistogramAccumulator, "utils")
+PYTHON_EXPORT_CLASS( ::genesis::utils::HistogramAccumulator, scope )
 {
 
     // -------------------------------------------------------------------
     //     Class HistogramAccumulator
     // -------------------------------------------------------------------
 
-    boost::python::class_< ::genesis::utils::HistogramAccumulator > ( "HistogramAccumulator", boost::python::init<  >(  ) )
-        .def( boost::python::init< const std::vector< double > &, boost::python::optional< double > >(( boost::python::arg("values"), boost::python::arg("weight")=(double)(1.0) )) )
-        .def( boost::python::init< const std::vector< std::pair< double, double >> & >(( boost::python::arg("weighted_values") )) )
-        .def( boost::python::init< HistogramAccumulator const & >(( boost::python::arg("") )) )
+    pybind11::class_< ::genesis::utils::HistogramAccumulator, std::shared_ptr<::genesis::utils::HistogramAccumulator> > ( scope, "HistogramAccumulator" )
+        .def(
+            pybind11::init<  >()
+        )
+        .def(
+            pybind11::init< const std::vector< double > &, double >(),
+            pybind11::arg("values"),
+            pybind11::arg("weight")=(double)(1.0)
+        )
+        .def(
+            pybind11::init< const std::vector< std::pair< double, double >> & >(),
+            pybind11::arg("weighted_values")
+        )
+        .def(
+            pybind11::init< HistogramAccumulator const & >(),
+            pybind11::arg("arg")
+        )
 
         // Public Member Functions
 
         .def(
             "accumulate",
             ( void ( ::genesis::utils::HistogramAccumulator::* )( double, double ))( &::genesis::utils::HistogramAccumulator::accumulate ),
-            ( boost::python::arg("x"), boost::python::arg("weight") )
+            pybind11::arg("x"),
+            pybind11::arg("weight")
+        )
+        .def(
+            "added_values",
+            ( size_t ( ::genesis::utils::HistogramAccumulator::* )(  ) const )( &::genesis::utils::HistogramAccumulator::added_values )
         )
         .def(
             "build_uniform_ranges_histogram",
             ( Histogram ( ::genesis::utils::HistogramAccumulator::* )( size_t, bool ) const )( &::genesis::utils::HistogramAccumulator::build_uniform_ranges_histogram ),
-            ( boost::python::arg("num_bins"), boost::python::arg("integer_ranges")=(bool)(false) )
+            pybind11::arg("num_bins"),
+            pybind11::arg("integer_ranges")=(bool)(false)
         )
         .def(
             "build_uniform_ranges_histogram",
             ( Histogram ( ::genesis::utils::HistogramAccumulator::* )( size_t, double, double ) const )( &::genesis::utils::HistogramAccumulator::build_uniform_ranges_histogram ),
-            ( boost::python::arg("num_bins"), boost::python::arg("min"), boost::python::arg("max") )
+            pybind11::arg("num_bins"),
+            pybind11::arg("min"),
+            pybind11::arg("max")
         )
         .def(
             "clear",
@@ -74,7 +72,7 @@ PYTHON_EXPORT_CLASS (HistogramAccumulator, "utils")
         .def(
             "increment",
             ( void ( ::genesis::utils::HistogramAccumulator::* )( double ))( &::genesis::utils::HistogramAccumulator::increment ),
-            ( boost::python::arg("x") )
+            pybind11::arg("x")
         )
         .def(
             "max",
@@ -91,24 +89,39 @@ PYTHON_EXPORT_CLASS (HistogramAccumulator, "utils")
         .def(
             "swap",
             ( void ( ::genesis::utils::HistogramAccumulator::* )( HistogramAccumulator & ))( &::genesis::utils::HistogramAccumulator::swap ),
-            ( boost::python::arg("other") )
+            pybind11::arg("other")
+        )
+
+        // Operators
+
+        .def(
+            "__str__",
+            []( ::genesis::utils::HistogramAccumulator const& obj ) -> std::string {
+                std::ostringstream s;
+                s << obj;
+                return s.str();
+            }
         )
 
         // Iterators
 
         .def(
             "__iter__",
-            boost::python::range ( &::genesis::utils::HistogramAccumulator::begin, &::genesis::utils::HistogramAccumulator::end )
+            []( ::genesis::utils::HistogramAccumulator& obj ){
+                return pybind11::make_iterator( obj.begin(), obj.end() );
+            },
+            pybind11::keep_alive<0, 1>()
         )
     ;
 }
 
-PYTHON_EXPORT_FUNCTIONS(utils_math_histogram_accumulator_export, "utils")
+PYTHON_EXPORT_FUNCTIONS( utils_math_histogram_accumulator_export, ::genesis::utils, scope )
 {
 
-    boost::python::def(
+    scope.def(
         "swap",
         ( void ( * )( HistogramAccumulator &, HistogramAccumulator & ))( &::genesis::utils::swap ),
-        ( boost::python::arg("lhs"), boost::python::arg("rhs") )
+            pybind11::arg("lhs"),
+            pybind11::arg("rhs")
     );
 }

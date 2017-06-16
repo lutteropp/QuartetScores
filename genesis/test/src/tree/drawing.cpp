@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,15 +28,16 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
-#include "lib/tree/default/newick_reader.hpp"
-#include "lib/tree/drawing/rectangular_layout.hpp"
-#include "lib/tree/tree.hpp"
+#include "genesis/tree/default/newick_reader.hpp"
+#include "genesis/tree/drawing/rectangular_layout.hpp"
+#include "genesis/tree/drawing/circular_layout.hpp"
+#include "genesis/tree/tree.hpp"
 
-#include "lib/utils/formats/svg/svg.hpp"
-#include "lib/utils/core/fs.hpp"
-#include "lib/utils/tools/color/names.hpp"
+#include "genesis/utils/formats/svg/svg.hpp"
+#include "genesis/utils/core/fs.hpp"
+#include "genesis/utils/tools/color/names.hpp"
 
 using namespace genesis;
 using namespace tree;
@@ -45,12 +46,11 @@ TEST(Tree, Drawing)
 {
     std::string input = "((A,(B,C)D)E,((F,(G,H)I)J,K)L)R;";
 
-    Tree tree;
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string( input, tree ));
+    Tree tree = DefaultTreeNewickReader().from_string( input );
+    // EXPECT_TRUE( DefaultTreeNewickReader().from_file( "/home/lucas/best_tree.newick", tree ));
 
-    auto layout = RectangularLayout();
-
-    layout.from_tree( tree );
+    // auto layout = RectangularLayout( tree );
+    auto layout = CircularLayout( tree );
 
     std::vector<std::string> scheme = {
         "Crimson",
@@ -79,9 +79,9 @@ TEST(Tree, Drawing)
     };
 
     std::vector<utils::SvgStroke> strokes;
-    for( size_t i = 0; i < 12; ++i ) {
+    for( size_t i = 0; i < tree.edge_count(); ++i ) {
         strokes.push_back( utils::SvgStroke() );
-        strokes.back().color = utils::get_named_color( scheme[i] );
+        strokes.back().color = utils::get_named_color( scheme[ i % scheme.size() ] );
     }
     layout.set_edge_strokes( strokes );
 

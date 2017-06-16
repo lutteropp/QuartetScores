@@ -1,26 +1,3 @@
-/*
-    Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    Contact:
-    Lucas Czech <lucas.czech@h-its.org>
-    Exelixis Lab, Heidelberg Institute for Theoretical Studies
-    Schloss-Wolfsbrunnenweg 35, D-69118 Heidelberg, Germany
-*/
-
 /**
  * @brief
  *
@@ -28,14 +5,14 @@
  * @ingroup python
  */
 
-#include <python/src/common.hpp>
+#include <src/common.hpp>
 
-#include "lib/genesis.hpp"
+#include "genesis/genesis.hpp"
 
 using namespace ::genesis::tree;
 
 template <typename LinkType, typename NodeType, typename EdgeType>
-void PythonExportClass_IteratorLevelorder(std::string name)
+void PythonExportClass_::genesis::tree::IteratorLevelorder(std::string name)
 {
 
     // -------------------------------------------------------------------
@@ -46,12 +23,30 @@ void PythonExportClass_IteratorLevelorder(std::string name)
 
     using IteratorLevelorderType = IteratorLevelorder<typename LinkType, typename NodeType, typename EdgeType>;
 
-    boost::python::class_< IteratorLevelorderType > ( name.c_str(), boost::python::init<  >(  ) )
-        .def( boost::python::init< TreeType & >(( boost::python::arg("tree") )) )
-        .def( boost::python::init< TreeType const & >(( boost::python::arg("tree") )) )
-        .def( boost::python::init< NodeType & >(( boost::python::arg("node") )) )
-        .def( boost::python::init< LinkType & >(( boost::python::arg("link") )) )
-        .def( boost::python::init< IteratorLevelorder const & >(( boost::python::arg("") )) )
+    pybind11::class_< IteratorLevelorderType, std::shared_ptr<IteratorLevelorderType> > ( scope, name.c_str() )
+        .def(
+            pybind11::init<  >()
+        )
+        .def(
+            pybind11::init< Tree & >(),
+            pybind11::arg("tree")
+        )
+        .def(
+            pybind11::init< Tree const & >(),
+            pybind11::arg("tree")
+        )
+        .def(
+            pybind11::init< NodeType & >(),
+            pybind11::arg("node")
+        )
+        .def(
+            pybind11::init< LinkType & >(),
+            pybind11::arg("link")
+        )
+        .def(
+            pybind11::init< IteratorLevelorder const & >(),
+            pybind11::arg("arg")
+        )
 
         // Public Member Functions
 
@@ -61,8 +56,7 @@ void PythonExportClass_IteratorLevelorder(std::string name)
         )
         .def(
             "edge",
-            ( EdgeType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::edge ),
-            boost::python::return_value_policy<boost::python::reference_existing_object>()
+            ( EdgeType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::edge )
         )
         .def(
             "is_first_iteration",
@@ -70,44 +64,40 @@ void PythonExportClass_IteratorLevelorder(std::string name)
         )
         .def(
             "link",
-            ( LinkType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::link ),
-            boost::python::return_value_policy<boost::python::reference_existing_object>()
+            ( LinkType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::link )
         )
         .def(
             "node",
-            ( NodeType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::node ),
-            boost::python::return_value_policy<boost::python::reference_existing_object>()
+            ( NodeType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::node )
         )
         .def(
             "start_link",
-            ( LinkType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::start_link ),
-            boost::python::return_value_policy<boost::python::reference_existing_object>()
+            ( LinkType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::start_link )
         )
         .def(
             "start_node",
-            ( NodeType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::start_node ),
-            boost::python::return_value_policy<boost::python::reference_existing_object>()
+            ( NodeType & ( IteratorLevelorderType::* )(  ) const )( &IteratorLevelorderType::start_node )
         )
 
         // Operators
 
-        .def( boost::python::self != boost::python::self )
-        .def( boost::python::self == boost::python::self )
+        .def( pybind11::self != pybind11::self )
+        .def( pybind11::self == pybind11::self )
     ;
 }
 
 template<typename ElementType>
 void python_export_function_tree_iterator_levelorder_ElementType ()
 {
-    boost::python::def(
+    scope.def(
         "levelorder",
-        ( utils::Range< IteratorLevelorder< typename ElementType::LinkType const, typename ElementType::NodeType const, typename ElementType::EdgeType const  > > ( * )( ElementType const & ))( &::genesis::tree::levelorder ),
-        ( boost::python::arg("element") )
+        ( utils::Range< IteratorLevelorder< TreeLink const, TreeNode const, TreeEdge const  > > ( * )( ElementType const & ))( &::genesis::tree::levelorder ),
+            pybind11::arg("element")
     );
 
-    boost::python::def(
+    scope.def(
         "levelorder",
-        ( utils::Range< IteratorLevelorder< typename ElementType::LinkType, typename ElementType::NodeType, typename ElementType::EdgeType > > ( * )( ElementType & ))( &::genesis::tree::levelorder ),
-        ( boost::python::arg("element") )
+        ( utils::Range< IteratorLevelorder< TreeLink, TreeNode, TreeEdge > > ( * )( ElementType & ))( &::genesis::tree::levelorder ),
+            pybind11::arg("element")
     );
 }

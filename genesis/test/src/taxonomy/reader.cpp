@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,12 +28,12 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
-#include "lib/taxonomy/formats/taxonomy_reader.hpp"
-#include "lib/taxonomy/taxon.hpp"
-#include "lib/taxonomy/taxonomy.hpp"
-#include "lib/taxonomy/functions/taxonomy.hpp"
+#include "genesis/taxonomy/formats/taxonomy_reader.hpp"
+#include "genesis/taxonomy/taxon.hpp"
+#include "genesis/taxonomy/taxonomy.hpp"
+#include "genesis/taxonomy/functions/taxonomy.hpp"
 
 #include <stdexcept>
 
@@ -95,7 +95,7 @@ TEST( Taxonomy, ReaderTrimming )
     // Read file and check basics.
     Taxonomy tax;
     auto reader = TaxonomyReader();
-    reader.taxscriptor_parser().trim_whitespaces( true );
+    reader.taxopath_parser().trim_whitespaces( true );
     EXPECT_NO_THROW( reader.from_file( infile, tax ));
     EXPECT_EQ( 32, total_taxa_count(tax) );
     EXPECT_TRUE( validate( tax ));

@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,104 +28,17 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
-#include "lib/sequence/functions/codes.hpp"
-#include "lib/sequence/functions/functions.hpp"
-#include "lib/sequence/sequence_set.hpp"
-#include "lib/sequence/formats/fasta_reader.hpp"
+#include "genesis/sequence/functions/codes.hpp"
+#include "genesis/sequence/functions/functions.hpp"
+#include "genesis/sequence/functions/stats.hpp"
+#include "genesis/sequence/sequence_set.hpp"
+#include "genesis/sequence/formats/fasta_reader.hpp"
 
 #include <string>
 
 using namespace genesis::sequence;
-
-TEST( Sequence, Print )
-{
-    // Skip test if no data availabe.
-    NEEDS_TEST_DATA;
-
-    // Load sequence file.
-    std::string infile = environment->data_dir + "sequence/dna_10.fasta";
-    SequenceSet sset;
-    FastaReader().from_file(infile, sset);
-
-    // Print Sequence.
-    EXPECT_EQ(
-        "Di106BGTue: TCGAA ...\n",
-        print( sset[0], true, 5 )
-    );
-    EXPECT_EQ(
-        "TCGAA ...\n",
-        print( sset[0], false, 5 )
-    );
-
-    // Print Sequence Set
-    EXPECT_EQ(
-        "Di106BGTue: TCGAA ...\nDi145BGTue: TCGAA ...\n...\n",
-        print( sset, true, 5, 2 )
-    );
-    EXPECT_EQ(
-        "TCGAA ...\nTCGAA ...\n...\n",
-        print( sset, false, 5, 2 )
-    );
-
-    // Print Color Sequence
-    EXPECT_EQ(
-        "Di106BGTue: \x1B[30;44mT\x1B[0m\x1B[30;42mC\x1B[0m\x1B[30;43mG\x1B[0m ...\n",
-        print_color( sset[0], nucleic_acid_text_colors(), true, 3, true )
-    );
-    EXPECT_EQ(
-        "\x1B[30;44mT\x1B[0m\x1B[30;42mC\x1B[0m\x1B[30;43mG\x1B[0m ...\n",
-        print_color( sset[0], nucleic_acid_text_colors(), false, 3, true )
-    );
-    EXPECT_EQ(
-        "Di106BGTue: \x1B[34mT\x1B[0m\x1B[32mC\x1B[0m\x1B[33mG\x1B[0m ...\n",
-        print_color( sset[0], nucleic_acid_text_colors(), true, 3, false )
-    );
-    EXPECT_EQ(
-        "\x1B[34mT\x1B[0m\x1B[32mC\x1B[0m\x1B[33mG\x1B[0m ...\n",
-        print_color( sset[0], nucleic_acid_text_colors(), false, 3, false )
-    );
-
-    // Print Color Sequence Set
-    EXPECT_EQ(
-        "Di106BGTue: \x1B[30;44mT\x1B[0m\x1B[30;42mC\x1B[0m\x1B[30;43mG\x1B[0m ...\n"
-        "Di145BGTue: \x1B[30;44mT\x1B[0m\x1B[30;42mC\x1B[0m\x1B[30;43mG\x1B[0m ...\n...\n",
-        print_color( sset, nucleic_acid_text_colors(), true, 3, 2, true )
-    );
-    EXPECT_EQ(
-        "\x1B[30;44mT\x1B[0m\x1B[30;42mC\x1B[0m\x1B[30;43mG\x1B[0m ...\n"
-        "\x1B[30;44mT\x1B[0m\x1B[30;42mC\x1B[0m\x1B[30;43mG\x1B[0m ...\n...\n",
-        print_color( sset, nucleic_acid_text_colors(), false, 3, 2, true )
-    );
-
-    /*
-    std::cout << "Simple:\n";
-    std::cout << sset[0] << "\n";
-    std::cout << sset << "\n";
-
-    std::cout << "\nPrint Sequence:\n";
-    std::cout << print( sset[0], true, 100 ) << "\n";
-    std::cout << print( sset[0], false, 100 ) << "\n";
-    std::cout << print( sset[0], false, 10 ) << "\n";
-
-    std::cout << "\nPrint Set:\n";
-    std::cout << print( sset, true, 100, 5 ) << "\n";
-    std::cout << print( sset, false, 80, 5 ) << "\n";
-
-    std::cout << "\nPrint Color Sequence:\n";
-    std::cout << print_color( sset[0], nucleic_acid_text_colors(), true, 100, true ) << "\n";
-    std::cout << print_color( sset[0], nucleic_acid_text_colors(), true, 100, false ) << "\n";
-    std::cout << print_color( sset[0], nucleic_acid_text_colors(), false, 100, true ) << "\n";
-    std::cout << print_color( sset[0], nucleic_acid_text_colors(), false, 100, false ) << "\n";
-
-    std::cout << "\nPrint Color Set:\n";
-    std::cout << print_color( sset, nucleic_acid_text_colors(), true, 100, 6, true ) << "\n";
-    std::cout << print_color( sset, nucleic_acid_text_colors(), true, 100, 6, false ) << "\n";
-    std::cout << print_color( sset, nucleic_acid_text_colors(), false, 100, 6, true ) << "\n";
-    std::cout << print_color( sset, nucleic_acid_text_colors(), false, 100, 6, false ) << "\n";
-    */
-}
 
 TEST( SequenceSet, Characteristics )
 {

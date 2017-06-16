@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,20 +28,20 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <string>
 
-#include "lib/tree/default/distances.hpp"
-#include "lib/tree/default/edge_color.hpp"
-#include "lib/tree/default/functions.hpp"
-#include "lib/tree/default/newick_reader.hpp"
-#include "lib/tree/function/functions.hpp"
-#include "lib/tree/formats/newick/reader.hpp"
-#include "lib/tree/tree.hpp"
+#include "genesis/tree/default/distances.hpp"
+#include "genesis/tree/default/edge_color.hpp"
+#include "genesis/tree/default/functions.hpp"
+#include "genesis/tree/default/newick_reader.hpp"
+#include "genesis/tree/function/functions.hpp"
+#include "genesis/tree/formats/newick/reader.hpp"
+#include "genesis/tree/tree.hpp"
 
-#include "lib/utils/tools/color.hpp"
-#include "lib/utils/tools/color/operators.hpp"
+#include "genesis/utils/tools/color.hpp"
+#include "genesis/utils/tools/color/operators.hpp"
 
 #include <algorithm>
 
@@ -54,9 +54,8 @@ TEST(DefaultTree, EdgeColorBranchLengthGradient)
     NEEDS_TEST_DATA;
 
     // Read and process tree.
-    Tree tree;
     std::string infile = environment->data_dir + "tree/distances.newick";
-    DefaultTreeNewickReader().from_file(infile, tree);
+    Tree tree = DefaultTreeNewickReader().from_file( infile );
 
     // Colorize the branches according to their length.
     auto colors = edge_color_branch_length_gradient(tree);
@@ -72,7 +71,7 @@ TEST(DefaultTree, NodeNames)
 
     // Using a tree with all names set to some value.
     std::string input = "((A,(B,C)D)E,((F,(G,H)I)J,K)L)R;";
-    EXPECT_TRUE(DefaultTreeNewickReader().from_string(input, tree));
+    tree = DefaultTreeNewickReader().from_string( input );
 
     EXPECT_EQ( 13, tree.node_count() );
     EXPECT_EQ(  7, leaf_node_count(tree) );
@@ -85,7 +84,7 @@ TEST(DefaultTree, NodeNames)
 
     // Using a tree where some names are empty.
     input = "((A,(B,))E,((,(G,H))J,)L);";
-    EXPECT_TRUE(DefaultTreeNewickReader().from_string(input, tree));
+    tree = DefaultTreeNewickReader().from_string( input );
 
     EXPECT_EQ( 13, tree.node_count() );
     EXPECT_EQ(  7, leaf_node_count(tree) );

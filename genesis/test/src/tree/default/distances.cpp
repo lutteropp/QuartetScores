@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,17 +28,17 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <string>
 
-#include "lib/tree/default/distances.hpp"
-#include "lib/tree/default/newick_reader.hpp"
-#include "lib/tree/function/distances.hpp"
-#include "lib/tree/function/functions.hpp"
-#include "lib/tree/formats/newick/reader.hpp"
-#include "lib/tree/tree.hpp"
-#include "lib/utils/math/matrix.hpp"
+#include "genesis/tree/default/distances.hpp"
+#include "genesis/tree/default/newick_reader.hpp"
+#include "genesis/tree/function/distances.hpp"
+#include "genesis/tree/function/functions.hpp"
+#include "genesis/tree/formats/newick/reader.hpp"
+#include "genesis/tree/tree.hpp"
+#include "genesis/utils/math/matrix.hpp"
 
 using namespace genesis;
 using namespace tree;
@@ -49,9 +49,8 @@ TEST(DefaultTree, Distances)
     NEEDS_TEST_DATA;
 
     // Read and process tree.
-    Tree tree;
     std::string infile = environment->data_dir + "tree/distances.newick";
-    DefaultTreeNewickReader().from_file(infile, tree);
+    Tree tree =  DefaultTreeNewickReader().from_file( infile );
 
     // Basic checks.
     EXPECT_EQ(7, leaf_node_count(tree));

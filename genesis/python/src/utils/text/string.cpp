@@ -1,26 +1,3 @@
-/*
-    Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    Contact:
-    Lucas Czech <lucas.czech@h-its.org>
-    Exelixis Lab, Heidelberg Institute for Theoretical Studies
-    Schloss-Wolfsbrunnenweg 35, D-69118 Heidelberg, Germany
-*/
-
 /**
  * @brief
  *
@@ -28,102 +5,205 @@
  * @ingroup python
  */
 
-#include <python/src/common.hpp>
+#include <src/common.hpp>
 
-#include "lib/genesis.hpp"
+#include "genesis/genesis.hpp"
 
 using namespace ::genesis::utils;
 
-PYTHON_EXPORT_FUNCTIONS(utils_text_string_export, "utils")
+PYTHON_EXPORT_FUNCTIONS( utils_text_string_export, ::genesis::utils, scope )
 {
 
-    boost::python::def(
+    scope.def(
+        "ends_with",
+        ( bool ( * )( std::string const &, std::string const & ))( &::genesis::utils::ends_with ),
+            pybind11::arg("text"),
+            pybind11::arg("ending")
+    );
+
+    scope.def(
         "equals_ci",
         ( bool ( * )( std::string const &, std::string const & ))( &::genesis::utils::equals_ci ),
-        ( boost::python::arg("lhs"), boost::python::arg("rhs") ),
-        get_docstring("bool ::genesis::utils::equals_ci (std::string const & lhs, std::string const & rhs)")
+            pybind11::arg("lhs"),
+            pybind11::arg("rhs")
     );
 
-    boost::python::def(
+    scope.def(
+        "starts_with",
+        ( bool ( * )( std::string const &, std::string const & ))( &::genesis::utils::starts_with ),
+            pybind11::arg("text"),
+            pybind11::arg("start")
+    );
+
+    scope.def(
+        "deescape",
+        ( char ( * )( char ))( &::genesis::utils::deescape ),
+            pybind11::arg("c")
+    );
+
+    scope.def(
+        "to_lower_ascii",
+        ( char ( * )( char ))( &::genesis::utils::to_lower_ascii ),
+            pybind11::arg("c")
+    );
+
+    scope.def(
+        "to_upper_ascii",
+        ( char ( * )( char ))( &::genesis::utils::to_upper_ascii ),
+            pybind11::arg("c")
+    );
+
+    scope.def(
         "count_substring_occurrences",
         ( size_t ( * )( std::string const &, std::string const & ))( &::genesis::utils::count_substring_occurrences ),
-        ( boost::python::arg("str"), boost::python::arg("sub") ),
-        get_docstring("size_t ::genesis::utils::count_substring_occurrences (std::string const & str, std::string const & sub)")
+            pybind11::arg("str"),
+            pybind11::arg("sub")
     );
 
-    boost::python::def(
+    scope.def(
         "deescape",
         ( std::string ( * )( std::string const & ))( &::genesis::utils::deescape ),
-        ( boost::python::arg("text") ),
-        get_docstring("std::string ::genesis::utils::deescape (std::string const & text)")
+            pybind11::arg("text")
     );
 
-    boost::python::def(
+    scope.def(
         "escape",
         ( std::string ( * )( std::string const & ))( &::genesis::utils::escape ),
-        ( boost::python::arg("text") ),
-        get_docstring("std::string ::genesis::utils::escape (std::string const & text)")
+            pybind11::arg("text")
     );
 
-    boost::python::def(
+    scope.def(
+        "head",
+        ( std::string ( * )( std::string const &, size_t ))( &::genesis::utils::head ),
+            pybind11::arg("text"),
+            pybind11::arg("lines")=(size_t)(10)
+    );
+
+    scope.def(
+        "indent",
+        ( std::string ( * )( std::string const &, std::string const & ))( &::genesis::utils::indent ),
+            pybind11::arg("text"),
+            pybind11::arg("indentation")=(std::string const &)("    ")
+    );
+
+    scope.def(
+        "repeat",
+        ( std::string ( * )( std::string const &, size_t ))( &::genesis::utils::repeat ),
+            pybind11::arg("word"),
+            pybind11::arg("times")
+    );
+
+    scope.def(
         "replace_all",
         ( std::string ( * )( std::string const &, std::string const &, std::string const & ))( &::genesis::utils::replace_all ),
-        ( boost::python::arg("text"), boost::python::arg("search"), boost::python::arg("replace") ),
-        get_docstring("std::string ::genesis::utils::replace_all (std::string const & text, std::string const & search, std::string const & replace)")
+            pybind11::arg("text"),
+            pybind11::arg("search"),
+            pybind11::arg("replace")
     );
 
-    boost::python::def(
+    scope.def(
+        "replace_all_chars",
+        ( std::string ( * )( std::string const &, std::string const &, char ))( &::genesis::utils::replace_all_chars ),
+            pybind11::arg("text"),
+            pybind11::arg("search_chars"),
+            pybind11::arg("replace")
+    );
+
+    scope.def(
+        "tail",
+        ( std::string ( * )( std::string const &, size_t ))( &::genesis::utils::tail ),
+            pybind11::arg("text"),
+            pybind11::arg("lines")=(size_t)(10)
+    );
+
+    scope.def(
         "to_lower",
         ( std::string ( * )( std::string const & ))( &::genesis::utils::to_lower ),
-        ( boost::python::arg("str") ),
-        get_docstring("std::string ::genesis::utils::to_lower (std::string const & str)")
+            pybind11::arg("str")
     );
 
-    boost::python::def(
+    scope.def(
+        "to_lower_ascii",
+        ( std::string ( * )( std::string const & ))( &::genesis::utils::to_lower_ascii ),
+            pybind11::arg("str")
+    );
+
+    scope.def(
         "to_string_precise",
         ( std::string ( * )( double, const int ))( &::genesis::utils::to_string_precise ),
-        ( boost::python::arg("value"), boost::python::arg("precision") ),
-        get_docstring("std::string ::genesis::utils::to_string_precise (double value, const int precision)")
+            pybind11::arg("value"),
+            pybind11::arg("precision")=(const int)(6)
     );
 
-    boost::python::def(
+    scope.def(
+        "to_string_rounded",
+        ( std::string ( * )( double, const int ))( &::genesis::utils::to_string_rounded ),
+            pybind11::arg("value"),
+            pybind11::arg("precision")=(const int)(6)
+    );
+
+    scope.def(
         "to_upper",
         ( std::string ( * )( std::string const & ))( &::genesis::utils::to_upper ),
-        ( boost::python::arg("str") ),
-        get_docstring("std::string ::genesis::utils::to_upper (std::string const & str)")
+            pybind11::arg("str")
     );
 
-    boost::python::def(
+    scope.def(
+        "to_upper_ascii",
+        ( std::string ( * )( std::string const & ))( &::genesis::utils::to_upper_ascii ),
+            pybind11::arg("str")
+    );
+
+    scope.def(
         "trim",
         ( std::string ( * )( std::string const &, std::string const & ))( &::genesis::utils::trim ),
-        ( boost::python::arg("s"), boost::python::arg("delimiters") ),
-        get_docstring("std::string ::genesis::utils::trim (std::string const & s, std::string const & delimiters)")
+            pybind11::arg("s"),
+            pybind11::arg("delimiters")=(std::string const &)(" \f\n\r\t\v")
     );
 
-    boost::python::def(
+    scope.def(
         "trim_left",
         ( std::string ( * )( std::string const &, std::string const & ))( &::genesis::utils::trim_left ),
-        ( boost::python::arg("s"), boost::python::arg("delimiters") ),
-        get_docstring("std::string ::genesis::utils::trim_left (std::string const & s, std::string const & delimiters)")
+            pybind11::arg("s"),
+            pybind11::arg("delimiters")=(std::string const &)(" \f\n\r\t\v")
     );
 
-    boost::python::def(
+    scope.def(
         "trim_right",
         ( std::string ( * )( std::string const &, std::string const & ))( &::genesis::utils::trim_right ),
-        ( boost::python::arg("s"), boost::python::arg("delimiters") ),
-        get_docstring("std::string ::genesis::utils::trim_right (std::string const & s, std::string const & delimiters)")
+            pybind11::arg("s"),
+            pybind11::arg("delimiters")=(std::string const &)(" \f\n\r\t\v")
     );
 
-    boost::python::def(
-        "unify_newlines",
-        ( std::string ( * )( std::string const & ))( &::genesis::utils::unify_newlines ),
-        ( boost::python::arg("s") )
-    );
-
-    boost::python::def(
+    scope.def(
         "split",
         ( std::vector< std::string > ( * )( std::string const &, std::string const &, const bool ))( &::genesis::utils::split ),
-        ( boost::python::arg("str"), boost::python::arg("delimiters"), boost::python::arg("trim_empty") ),
-        get_docstring("std::vector< std::string > ::genesis::utils::split (std::string const & str, std::string const & delimiters, const bool trim_empty)")
+            pybind11::arg("str"),
+            pybind11::arg("delimiters")=(std::string const &)(" "),
+            pybind11::arg("trim_empty")=(const bool)(true)
+    );
+
+    scope.def(
+        "to_lower_ascii_inplace",
+        ( void ( * )( std::string & ))( &::genesis::utils::to_lower_ascii_inplace ),
+            pybind11::arg("str")
+    );
+
+    scope.def(
+        "to_lower_inplace",
+        ( void ( * )( std::string & ))( &::genesis::utils::to_lower_inplace ),
+            pybind11::arg("str")
+    );
+
+    scope.def(
+        "to_upper_ascii_inplace",
+        ( void ( * )( std::string & ))( &::genesis::utils::to_upper_ascii_inplace ),
+            pybind11::arg("str")
+    );
+
+    scope.def(
+        "to_upper_inplace",
+        ( void ( * )( std::string & ))( &::genesis::utils::to_upper_inplace ),
+            pybind11::arg("str")
     );
 }

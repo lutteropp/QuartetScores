@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,19 +28,21 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <string>
 
-#include "lib/tree/default/newick_reader.hpp"
-#include "lib/tree/default/newick_writer.hpp"
-#include "lib/tree/function/functions.hpp"
-#include "lib/tree/function/operators.hpp"
-#include "lib/tree/formats/newick/color_writer_mixin.hpp"
-#include "lib/tree/formats/newick/reader.hpp"
-#include "lib/tree/formats/newick/writer.hpp"
-#include "lib/tree/tree.hpp"
-#include "lib/utils/text/string.hpp"
+#include "genesis/tree/default/newick_reader.hpp"
+#include "genesis/tree/default/newick_writer.hpp"
+#include "genesis/tree/function/functions.hpp"
+#include "genesis/tree/function/operators.hpp"
+#include "genesis/tree/formats/newick/color_writer_plugin.hpp"
+#include "genesis/tree/formats/newick/input_iterator.hpp"
+#include "genesis/tree/formats/newick/reader.hpp"
+#include "genesis/tree/formats/newick/writer.hpp"
+#include "genesis/tree/tree.hpp"
+#include "genesis/utils/io/input_stream.hpp"
+#include "genesis/utils/text/string.hpp"
 
 using namespace genesis;
 using namespace tree;
@@ -49,9 +51,13 @@ TEST(Newick, FromAndToString)
 {
     std::string input = "((A,(B,C)D)E,((F,(G,H)I)J,K)L)R;";
 
-    Tree tree;
-    EXPECT_TRUE(DefaultTreeNewickReader().from_string(input, tree));
-    std::string output = DefaultTreeNewickWriter().to_string(tree);
+    // Wead
+    Tree tree = DefaultTreeNewickReader().from_string( input );
+
+    // Write
+    auto writer = DefaultTreeNewickWriter();
+    writer.enable_branch_lengths( false );
+    std::string output = writer.to_string( tree );
 
     EXPECT_EQ(input, output);
 }
@@ -60,80 +66,87 @@ TEST(Newick, NewickVariants)
 {
     Tree tree;
 
+    EXPECT_TRUE( tree.empty() );
+
+    // Stupid tree.
+    tree = DefaultTreeNewickReader().from_string(
+        "();"
+    );
+    EXPECT_TRUE( validate_topology(tree) );
+    EXPECT_EQ( 2, tree.node_count() );
+    EXPECT_FALSE( tree.empty() );
+
     // No nodes are named.
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(
-        "(,,(,));",
-        tree
-    ));
+    tree = DefaultTreeNewickReader().from_string(
+        "(,,(,));"
+    );
     EXPECT_TRUE( validate_topology(tree) );
 
     // Leaf nodes are named.
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(
-        "(A,B,(C,D));",
-        tree
-    ));
+    tree = DefaultTreeNewickReader().from_string(
+        "(A,B,(C,D));"
+    );
     EXPECT_TRUE( validate_topology(tree) );
 
     // All nodes are named.
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(
-        "(A,B,(C,D)E)F;",
-        tree
-    ));
+    tree = DefaultTreeNewickReader().from_string(
+        "(A,B,(C,D)E)F;"
+    );
     EXPECT_TRUE( validate_topology(tree) );
 
     // All but root node have a distance to parent.
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(
-        "(:0.1,:0.2,(:0.3,:0.4):0.5);",
-        tree
-    ));
+    tree = DefaultTreeNewickReader().from_string(
+        "(:0.1,:0.2,(:0.3,:0.4):0.5);"
+    );
     EXPECT_TRUE( validate_topology(tree) );
 
     // All have a distance to parent.
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(
-        "(:0.1,:0.2,(:0.3,:0.4):0.5):0.0;",
-        tree
-    ));
+    tree = DefaultTreeNewickReader().from_string(
+        "(:0.1,:0.2,(:0.3,:0.4):0.5):0.0;"
+    );
     EXPECT_TRUE( validate_topology(tree) );
 
     // Distances and leaf names (popular).
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(
-        "(A:0.1,B:0.2,(C:0.3,D:0.4):0.5);",
-        tree
-    ));
+    tree = DefaultTreeNewickReader().from_string(
+        "(A:0.1,B:0.2,(C:0.3,D:0.4):0.5);"
+    );
     EXPECT_TRUE( validate_topology(tree) );
 
     // Distances and all names.
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(
-        "(A:0.1,B:0.2,(C:0.3,D:0.4)E:0.5)F;",
-        tree
-    ));
+    tree = DefaultTreeNewickReader().from_string(
+        "(A:0.1,B:0.2,(C:0.3,D:0.4)E:0.5)F;"
+    );
     EXPECT_TRUE( validate_topology(tree) );
 
     // A tree rooted on a leaf node (rare).
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(
-        "((B:0.2,(C:0.3,D:0.4)E:0.5)F:0.1)A;",
-        tree
-    ));
+    tree = DefaultTreeNewickReader().from_string(
+        "((B:0.2,(C:0.3,D:0.4)E:0.5)F:0.1)A;"
+    );
     EXPECT_TRUE( validate_topology(tree) );
 
-    // All mixed, with comments and tags.
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(
-        "( ( Ant:0.2{0}, [a comment] 'Bee':0.09{1} )Inner:0.7{2}, Coyote:0.5{3} ){4};",
-        tree
-    ));
+    // All mixed, with comments and tags. Need to activate tags first.
+    auto reader = DefaultTreeNewickReader();
+    reader.enable_tags( true );
+    tree = reader.from_string(
+        "( ( Ant:0.2{0}, [a comment] 'Bee':0.09{1} )Inner:0.7{2}, Coyote:0.5{3} ){4};"
+    );
     EXPECT_TRUE( validate_topology(tree) );
 }
 
-TEST(Newick, ColorMixin)
+TEST(Newick, ColorPlugin)
 {
     std::string input = "((A,(B,C)D)E,((F,(G,H)I)J,K)L)R;";
 
     Tree tree;
-    typedef DefaultTreeNewickWriterMixin<NewickColorWriterMixin<NewickWriter>> ColorTreeNewickWriter;
 
-    // Make sure that the mixin does not interfere with other Newick functionality. If it does, the
+    // Prepare a Newick writer with color plugin functions.
+    auto writer = DefaultTreeNewickWriter();
+    auto color_plugin = NewickColorWriterPlugin();
+    color_plugin.register_with( writer );
+
+    // Make sure that the plugin does not interfere with other Newick functionality. If it does, the
     // following line would hopefully crash.
-    EXPECT_TRUE( DefaultTreeNewickReader().from_string(input, tree) );
+    tree = DefaultTreeNewickReader().from_string(input);
 
     // Create a color vector for all edges that marks edges leading to a leaf node in red.
     auto color_vector = std::vector<utils::Color>( tree.edge_count() );
@@ -146,10 +159,9 @@ TEST(Newick, ColorMixin)
     // Use the color vector to produce a newick string with color tags.
     // We set ignored color to fuchsia ("magic pink") in order to also print out the black colored
     // inner edges.
-    auto proc = ColorTreeNewickWriter();
-    proc.edge_colors(color_vector);
-    proc.ignored_color(utils::Color(255, 0, 255));
-    std::string output = proc.to_string(tree);
+    color_plugin.edge_colors(color_vector);
+    color_plugin.ignored_color(utils::Color(255, 0, 255));
+    std::string output = writer.to_string(tree);
 
     // Check if we actually got the right number of red color tag comments.
     auto count_red = utils::count_substring_occurrences( output, "[&!color=#ff0000]" );
@@ -159,4 +171,40 @@ TEST(Newick, ColorMixin)
     // This is one fewer than the number of nodes, as no color tag is written for the root.
     auto count_black = utils::count_substring_occurrences( output, "[&!color=#000000]" );
     EXPECT_EQ( inner_node_count(tree) - 1, count_black );
+}
+
+TEST( Newick, MultipleTrees )
+{
+    // Skip test if no data availabe.
+    NEEDS_TEST_DATA;
+
+    // Open a file stream.
+    std::string infile = environment->data_dir + "tree/multiple.newick";
+    utils::InputStream instream( utils::make_unique< utils::FileInputSource >( infile ));
+
+    // Get the iterator and start reading.
+    auto tree_iter = NewickInputIterator( instream );
+
+    while( tree_iter ) {
+        EXPECT_EQ( 6, tree_iter->node_count() );
+        ++tree_iter;
+    }
+}
+
+TEST( Newick, MultipleNamedTrees )
+{
+    // Skip test if no data availabe.
+    NEEDS_TEST_DATA;
+
+    // Open a file stream.
+    std::string infile = environment->data_dir + "tree/multiple_named.newick";
+    utils::InputStream instream( utils::make_unique< utils::FileInputSource >( infile ));
+
+    // Get the iterator and start reading.
+    auto tree_iter = NewickInputIterator( instream );
+
+    while( tree_iter ) {
+        EXPECT_EQ( 6, tree_iter->node_count() );
+        ++tree_iter;
+    }
 }

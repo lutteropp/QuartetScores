@@ -1,5 +1,5 @@
 # Genesis - A toolkit for working with phylogenetic data.
-# Copyright (C) 2014-2016 Lucas Czech
+# Copyright (C) 2014-2017 Lucas Czech
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,17 @@
 #   Build Options
 # ------------------------------------------------------------------------------
 
-set( EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin )
+set( EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/apps )
+
+# Set rpath for all targets, so that they work out of the box (libgenesis.so in parent directory),
+# as well as when relocating with the lib being in the same directory.
+# Also, we need to set two versions of ORIGIN here (one and two dollar signs).
+# This is because on some systems it seems to be escaped, on some not...
+# See https://cmake.org/pipermail/cmake/2008-January/019290.html
+# and https://cmake.org/Wiki/CMake_RPATH_handling for details.
+# Tipp: Use `ldd binary` and `readelf -d binary` to check RPATH settings.
+set( CMAKE_INSTALL_RPATH "$ORIGIN/..:$$ORIGIN/..:$ORIGIN:$$ORIGIN" )
+set( CMAKE_BUILD_WITH_INSTALL_RPATH TRUE )
 
 # ------------------------------------------------------------------------------
 #   Sources
@@ -48,8 +58,12 @@ if( genesis_apps_sources )
 
         add_executable( ${app_name} ${app_src} )
 
-        target_link_libraries( ${app_name} genesis_lib_shared stxxl)
-        set_target_properties ( ${app_name} PROPERTIES INSTALL_RPATH "$$ORIGIN" )
+        target_link_libraries( ${app_name} genesis_lib_shared )
+
+        if(THREADS_FOUND)
+            target_link_libraries ( ${app_name} ${CMAKE_THREAD_LIBS_INIT})
+        endif()
+
     endforeach()
 
 else()

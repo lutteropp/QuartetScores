@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Genesis - A toolkit for working with phylogenetic data.
-# Copyright (C) 2014-2016 Lucas Czech
+# Copyright (C) 2014-2017 Lucas Czech
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 # Change to top level of git repo and then to /lib
 # This ensures that the script can be called from any directory.
 cd `git rev-parse --show-toplevel`
-cd lib/
+cd lib/genesis/
 rm -f genesis.hpp
 
 echo "#ifndef GENESIS_H_" >> genesis.hpp
@@ -36,7 +36,7 @@ echo "#define GENESIS_H_" >> genesis.hpp
 echo "" >> genesis.hpp
 echo "/*" >> genesis.hpp
 echo "    Genesis - A toolkit for working with phylogenetic data." >> genesis.hpp
-echo "    Copyright (C) 2014-2016 Lucas Czech" >> genesis.hpp
+echo "    Copyright (C) 2014-2017 Lucas Czech" >> genesis.hpp
 echo "" >> genesis.hpp
 echo "    This program is free software: you can redistribute it and/or modify" >> genesis.hpp
 echo "    it under the terms of the GNU General Public License as published by" >> genesis.hpp
@@ -71,7 +71,7 @@ for d in `ls -v -d */`
 do
     for f in `find ${d} -name "*.hpp" | sort`
     do
-        echo "#include \"${f}\"" >> genesis.hpp
+        echo "#include \"genesis/${f}\"" >> genesis.hpp
     done
     echo "" >> genesis.hpp
 done

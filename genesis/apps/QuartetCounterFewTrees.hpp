@@ -1,6 +1,7 @@
 #pragma once
 
-#include "genesis.hpp"
+#include "Integer.hpp"
+#include "genesis/genesis.hpp"
 #include <vector>
 #include <cassert>
 #include <algorithm>
@@ -21,29 +22,32 @@ using namespace std;
  */
 class QuartetCounterFewTrees {
 public:
-	QuartetCounterFewTrees(Tree const &refTree, TreeSet const &evalTrees);
-	std::tuple<size_t, size_t, size_t> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
+	QuartetCounterFewTrees(Tree const &refTree, const std::string &evalTreesPath);
+	std::tuple<cint, cint, cint> countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx);
 private:
 	std::vector<std::unique_ptr<TreeInformation> > infos; /**> helper classes for lca and distance computation in each of the trees */
 	std::unique_ptr<TaxonMapper> taxonMapper; /**> helper class for identifying taxa throughout the trees */
 	std::vector<size_t> eulerTourLeaves; /**> the node IDs of the taxa, visited in an Eulerian tour order */
-	TreeSet const &evaluationTrees; /**> The set of evaluation trees */
 };
 
 /**
  * @param refTree the reference tree
  * @param evalTrees the set of evaluation trees
  */
-QuartetCounterFewTrees::QuartetCounterFewTrees(Tree const &refTree, TreeSet const &evalTrees) :
-		evaluationTrees(evalTrees) {
+QuartetCounterFewTrees::QuartetCounterFewTrees(Tree const &refTree, const std::string &evalTreesPath) {
 	size_t n = refTree.node_count();
 	std::unordered_map<std::string, size_t> taxonToReferenceID;
 #pragma omp parallel for
 	for (size_t i = 0; i < n; ++i) {
 		taxonToReferenceID[refTree.node_at(i).data<DefaultNodeData>().name] = i;
 	}
-	for (size_t i = 0; i < evalTrees.size(); ++i) {
-		infos.push_back(make_unique<TreeInformation>(evalTrees[i].tree));
+
+	utils::InputStream instream(utils::make_unique<utils::FileInputSource>(evalTreesPath));
+	auto itTree = NewickInputIterator(instream, DefaultTreeNewickReader());
+	while (itTree) { // iterate over the set of evaluation trees
+		Tree const& tree = *itTree;
+		infos.push_back(make_unique<TreeInformation>(tree));
+		++itTree;
 	}
 
 	// precompute subtree informations
@@ -54,7 +58,7 @@ QuartetCounterFewTrees::QuartetCounterFewTrees(Tree const &refTree, TreeSet cons
 	}
 
 	// precompute taxon ID mappings
-	taxonMapper = make_unique<TaxonMapper>(refTree, evalTrees, eulerTourLeaves);
+	taxonMapper = make_unique<TaxonMapper>(refTree, evalTreesPath, eulerTourLeaves);
 	//std::cout << "Finished precomputing taxon ID mappings.\n";
 }
 
@@ -66,12 +70,12 @@ QuartetCounterFewTrees::QuartetCounterFewTrees(Tree const &refTree, TreeSet cons
  * @param cIdx the ID of the taxon c in the reference tree
  * @param dIdx the ID of the taxon d in the reference tree
  */
-std::tuple<size_t, size_t, size_t> QuartetCounterFewTrees::countQuartetOccurrences(size_t aIdx, size_t bIdx,
+std::tuple<cint, cint, cint> QuartetCounterFewTrees::countQuartetOccurrences(size_t aIdx, size_t bIdx,
 		size_t cIdx, size_t dIdx) {
 	size_t q1, q2, q3;
 	q1 = q2 = q3 = 0; // q1 = ab|cd, q2 = ac|bd, q3 = ad|bc
 #pragma omp parallel for
-	for (size_t i = 0; i < evaluationTrees.size(); ++i) {
+	for (size_t i = 0; i < infos.size(); ++i) {
 		size_t aIdxTransformed = taxonMapper->taxonEvalID(i, aIdx);
 		size_t bIdxTransformed = taxonMapper->taxonEvalID(i, bIdx);
 		size_t cIdxTransformed = taxonMapper->taxonEvalID(i, cIdx);
@@ -85,7 +89,7 @@ std::tuple<size_t, size_t, size_t> QuartetCounterFewTrees::countQuartetOccurrenc
 		}
 
 		// find topology
-		size_t rootIdx = evaluationTrees[i].tree.root_node().index();
+		size_t rootIdx = infos[i]->getRootIdx();
 		size_t lca_ab = infos[i]->lowestCommonAncestorIdx(aIdxTransformed, bIdxTransformed, rootIdx);
 		size_t lca_ac = infos[i]->lowestCommonAncestorIdx(aIdxTransformed, cIdxTransformed, rootIdx);
 		size_t lca_ad = infos[i]->lowestCommonAncestorIdx(aIdxTransformed, dIdxTransformed, rootIdx);
@@ -104,5 +108,5 @@ std::tuple<size_t, size_t, size_t> QuartetCounterFewTrees::countQuartetOccurrenc
 			q3++; // ad|bc
 		} // else, we have a multifurcation and the quartet has none of these three topologies.
 	}
-	return std::tuple<size_t, size_t, size_t>(q1, q2, q3);
+	return std::tuple<cint, cint, cint>(q1, q2, q3);
 }

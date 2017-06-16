@@ -1,6 +1,6 @@
 /*
     Genesis - A toolkit for working with phylogenetic data.
-    Copyright (C) 2014-2016 Lucas Czech
+    Copyright (C) 2014-2017 Lucas Czech
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,16 +28,16 @@
  * @ingroup test
  */
 
-#include "common.hpp"
+#include "src/common.hpp"
 
 #include <string>
 #include <utility>
 
-#include "lib/tree/default/functions.hpp"
-#include "lib/tree/default/newick_reader.hpp"
-#include "lib/tree/formats/newick/reader.hpp"
-#include "lib/tree/iterator/path.hpp"
-#include "lib/tree/tree.hpp"
+#include "genesis/tree/default/functions.hpp"
+#include "genesis/tree/default/newick_reader.hpp"
+#include "genesis/tree/formats/newick/reader.hpp"
+#include "genesis/tree/iterator/path.hpp"
+#include "genesis/tree/tree.hpp"
 
 using namespace genesis;
 using namespace tree;
@@ -51,8 +51,7 @@ void TestPath( std::string start_node_name, std::string finish_node_name, std::s
     std::string input = "((B,(D,E)C)A,F,(H,I)G)R;";
     std::string nodes = "";
 
-    Tree tree;
-    DefaultTreeNewickReader().from_string(input, tree);
+    Tree tree = DefaultTreeNewickReader().from_string( input );
 
     auto start_node  = find_node( tree, start_node_name  );
     auto finish_node = find_node( tree, finish_node_name );
