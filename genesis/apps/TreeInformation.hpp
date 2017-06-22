@@ -15,7 +15,8 @@ using namespace utils;
  */
 class TreeInformation {
 public:
-	TreeInformation(Tree const &tree);
+	TreeInformation();
+	void init(Tree const& tree);
 	/*
 	 * @brief Returns the index of the lowest common ancestor of the nodes at index uIdx and vIdx with respect to root node at rootIdx.
 	 */
@@ -91,7 +92,7 @@ size_t TreeInformation::lowestCommonAncestorIdx(size_t uIdx, size_t vIdx, size_t
 /**
  * @param tree the tree to build the TreeInformation for.
  */
-TreeInformation::TreeInformation(Tree const &tree) {
+void TreeInformation::init(Tree const &tree) {
 	dist_to_root = node_path_length_vector(tree);
 	// Arrays for LCA computation
 	std::vector<int> eulerTourLevels;
@@ -109,4 +110,11 @@ TreeInformation::TreeInformation(Tree const &tree) {
 	myRootIndex = tree.root_node().index();
 
 	rrmq = make_unique<RangeMinimumQuery>(eulerTourLevels);
+}
+
+/**
+ * @param tree the tree to build the TreeInformation for.
+ */
+TreeInformation::TreeInformation() {
+	myRootIndex = 0;
 }

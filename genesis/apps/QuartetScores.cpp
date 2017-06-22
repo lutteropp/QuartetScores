@@ -1,6 +1,7 @@
 #include "genesis/genesis.hpp"
 #include "quartet_newick_writer.hpp"
 #include "QuartetScoreComputer.hpp"
+#include "tclap/CmdLine.h" // command line parser, downloaded from http://tclap.sourceforge.net/
 #include <string>
 #include <vector>
 #include <iostream>
@@ -31,32 +32,37 @@ size_t countEvalTrees(const std::string &evalTreesPath) {
  */
 int main(int argc, char* argv[]) {
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-
-	// TODO: Change argument list to also support --fewtrees, --lookup, and --auto (default).
 	// TODO: Something like --nthreads would also be nice to have.
 
-	if (argc < 4 || argc > 5) {
-		std::cout << "Usage: " << argv[0] << " <Optional:-v> <refTreeFilePath> <evalTreesFilePath> <outputFilePath>"
-				<< std::endl;
-		return 1;
-	}
-
 	bool verbose = false;
-	if (argc == 5)
-		verbose = true;
-
+	bool savemem = false;
 	std::string pathToReferenceTree;
 	std::string pathToEvaluationTrees;
 	std::string outputFilePath;
 
-	if (argc == 4) {
-		pathToReferenceTree = std::string(argv[1]);
-		pathToEvaluationTrees = std::string(argv[2]);
-		outputFilePath = std::string(argv[3]);
-	} else {
-		pathToReferenceTree = std::string(argv[2]);
-		pathToEvaluationTrees = std::string(argv[3]);
-		outputFilePath = std::string(argv[4]);
+	try {
+		TCLAP::CmdLine cmd("Compute quartet scores", ' ', "1.0");
+		TCLAP::ValueArg<std::string> refArg("r", "ref", "Path to the reference tree", true, "", "string");
+		TCLAP::ValueArg<std::string> evalArg("e", "eval", "Path to the reference trees", true, "", "string");
+		TCLAP::ValueArg<std::string> outputArg("o", "output", "Path to the output file", true, "", "string");
+		TCLAP::SwitchArg verboseArg("v", "verbose", "Verbose mode", false);
+		TCLAP::SwitchArg savememArg("s", "savemem", "Consume less memory, but with the cost of increased runtime", false);
+		cmd.add(refArg);
+		cmd.add(evalArg);
+		cmd.add(outputArg);
+		cmd.add(verboseArg);
+		cmd.add(savememArg);
+		cmd.parse(argc, argv);
+
+		pathToReferenceTree = refArg.getValue();
+		pathToEvaluationTrees = evalArg.getValue();
+		outputFilePath = outputArg.getValue();
+		verbose = verboseArg.getValue();
+		savemem = savememArg.getValue();
+	} catch (TCLAP::ArgException &e) // catch any exceptions
+	{
+		std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
+		return 1;
 	}
 
 	std::ifstream infile(outputFilePath);
@@ -85,22 +91,22 @@ int main(int argc, char* argv[]) {
 	std::vector<double> eqpic;
 	size_t m = countEvalTrees(pathToEvaluationTrees);
 	if (m < (size_t(1) << 8)) {
-		QuartetScoreComputer<uint8_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose);
+		QuartetScoreComputer<uint8_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose, savemem);
 		lqic = qsc.getLQICScores();
 		qpic = qsc.getQPICScores();
 		eqpic = qsc.getEQPICScores();
 	} else if (m < (size_t(1) << 16)) {
-		QuartetScoreComputer<uint16_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose);
+		QuartetScoreComputer<uint16_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose, savemem);
 		lqic = qsc.getLQICScores();
 		qpic = qsc.getQPICScores();
 		eqpic = qsc.getEQPICScores();
 	} else if (m < (size_t(1) << 32)) {
-		QuartetScoreComputer<uint32_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose);
+		QuartetScoreComputer<uint32_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose, savemem);
 		lqic = qsc.getLQICScores();
 		qpic = qsc.getQPICScores();
 		eqpic = qsc.getEQPICScores();
 	} else {
-		QuartetScoreComputer<uint64_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose);
+		QuartetScoreComputer<uint64_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose, savemem);
 		lqic = qsc.getLQICScores();
 		qpic = qsc.getQPICScores();
 		eqpic = qsc.getEQPICScores();

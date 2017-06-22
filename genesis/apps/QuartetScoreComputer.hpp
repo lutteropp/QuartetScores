@@ -6,20 +6,21 @@
 #include <algorithm>
 #include <memory>
 #include <utility>
+#include <stdexcept>
 #include <unordered_map>
 #include "TreeInformation.hpp"
 #include <unordered_map>
 #include "QuartetCounterLookup.hpp"
-#include "QuartetCounterFewTrees.hpp"
+
+#if defined( _WIN32 ) || defined(  _WIN64  )
+#include <windows.h>
+#else
 #include <unistd.h>
-#include "QuartetCountCounterLookupCacheOptimized.hpp"
+#endif
 
 using namespace genesis;
 using namespace tree;
 using namespace utils;
-
-// TODO: FIXME: The QuartetCounterLookup solution works, the QuartetCounterLookupCacheOptimized solution does not work.
-#define CACHE_OPTIMIZED_LOOKUP FALSE
 
 /**
  * Hash a std::pair.
@@ -38,7 +39,8 @@ public:
 template<typename CINT>
 class QuartetScoreComputer {
 public:
-	QuartetScoreComputer(Tree const &refTree, const std::string &evalTreesPath, size_t m, bool verboseOutput);
+	QuartetScoreComputer(Tree const &refTree, const std::string &evalTreesPath, size_t m, bool verboseOutput,
+			bool enforceSmallMem);
 	std::vector<double> getLQICScores();
 	std::vector<double> getQPICScores();
 	std::vector<double> getEQPICScores();
@@ -58,12 +60,10 @@ private:
 
 	Tree referenceTree; /**< the reference tree */
 	size_t rootIdx; /**< ID of the genesis root node in the reference tree */
-	//TreeSet evaluationTrees; /**< a set of evaluation trees */
-	bool useLookupTable; /**< toggles usage of a lookup table versus usage of the distance-based method for few trees */
 
 	bool verbose;
 
-	std::unique_ptr<TreeInformation> informationReferenceTree;
+	TreeInformation informationReferenceTree;
 	std::vector<double> LQICScores;
 	std::vector<double> QPICScores;
 	std::vector<double> EQPICScores;
@@ -71,12 +71,7 @@ private:
 	std::vector<size_t> eulerTourLeaves;
 	std::vector<size_t> linkToEulerLeafIndex;
 
-#if CACHE_OPTIMIZED_LOOKUP
-	std::unique_ptr<QuartetCounterLookupCacheOptimized> quartetCounterLookup;
-#else
 	std::unique_ptr<QuartetCounterLookup<CINT>> quartetCounterLookup;
-#endif
-	std::unique_ptr<QuartetCounterFewTrees<CINT>> quartetCounterFewTrees;
 };
 
 /**
@@ -87,14 +82,15 @@ private:
  * @param dIdx ID of the taxon d in the reference tree
  */
 template<typename CINT>
-std::pair<size_t, size_t> QuartetScoreComputer<CINT>::nodePairForQuartet(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx) {
-	size_t uIdx = informationReferenceTree->lowestCommonAncestorIdx(aIdx, bIdx, rootIdx);
-	size_t vIdx = informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, rootIdx);
+std::pair<size_t, size_t> QuartetScoreComputer<CINT>::nodePairForQuartet(size_t aIdx, size_t bIdx, size_t cIdx,
+		size_t dIdx) {
+	size_t uIdx = informationReferenceTree.lowestCommonAncestorIdx(aIdx, bIdx, rootIdx);
+	size_t vIdx = informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, rootIdx);
 
-	if (uIdx == informationReferenceTree->lowestCommonAncestorIdx(aIdx, bIdx, vIdx)) {
-		vIdx = informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, uIdx);
+	if (uIdx == informationReferenceTree.lowestCommonAncestorIdx(aIdx, bIdx, vIdx)) {
+		vIdx = informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, uIdx);
 	} else {
-		uIdx = informationReferenceTree->lowestCommonAncestorIdx(aIdx, bIdx, vIdx);
+		uIdx = informationReferenceTree.lowestCommonAncestorIdx(aIdx, bIdx, vIdx);
 	}
 	return std::pair<size_t, size_t>(uIdx, vIdx);
 }
@@ -202,11 +198,7 @@ std::pair<size_t, size_t> get_path_inner_links(TreeNode const& u, TreeNode const
 template<typename CINT>
 std::tuple<CINT, CINT, CINT> QuartetScoreComputer<CINT>::countQuartetOccurrences(size_t aIdx, size_t bIdx, size_t cIdx,
 		size_t dIdx) {
-	if (useLookupTable) {
-		return quartetCounterLookup->countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
-	} else {
-		return quartetCounterFewTrees->countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
-	}
+	return quartetCounterLookup->countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
 }
 
 /**
@@ -225,35 +217,35 @@ void QuartetScoreComputer<CINT>::computeQuartetScoresBifurcatingQuartets() {
 					size_t wIdx = eulerTourLeaves[wLeafIdx];
 					size_t zIdx = eulerTourLeaves[zLeafIdx];
 					// find topology ab|cd of {u,v,w,z}
-					size_t lca_uv = informationReferenceTree->lowestCommonAncestorIdx(uIdx, vIdx, rootIdx);
-					size_t lca_uw = informationReferenceTree->lowestCommonAncestorIdx(uIdx, wIdx, rootIdx);
-					size_t lca_uz = informationReferenceTree->lowestCommonAncestorIdx(uIdx, zIdx, rootIdx);
-					size_t lca_vw = informationReferenceTree->lowestCommonAncestorIdx(vIdx, wIdx, rootIdx);
-					size_t lca_vz = informationReferenceTree->lowestCommonAncestorIdx(vIdx, zIdx, rootIdx);
-					size_t lca_wz = informationReferenceTree->lowestCommonAncestorIdx(wIdx, zIdx, rootIdx);
+					size_t lca_uv = informationReferenceTree.lowestCommonAncestorIdx(uIdx, vIdx, rootIdx);
+					size_t lca_uw = informationReferenceTree.lowestCommonAncestorIdx(uIdx, wIdx, rootIdx);
+					size_t lca_uz = informationReferenceTree.lowestCommonAncestorIdx(uIdx, zIdx, rootIdx);
+					size_t lca_vw = informationReferenceTree.lowestCommonAncestorIdx(vIdx, wIdx, rootIdx);
+					size_t lca_vz = informationReferenceTree.lowestCommonAncestorIdx(vIdx, zIdx, rootIdx);
+					size_t lca_wz = informationReferenceTree.lowestCommonAncestorIdx(wIdx, zIdx, rootIdx);
 
 					size_t aIdx, bIdx, cIdx, dIdx;
 
-					if (informationReferenceTree->distanceInEdges(lca_uv, lca_wz)
-							> informationReferenceTree->distanceInEdges(lca_uw, lca_vz)
-							&& informationReferenceTree->distanceInEdges(lca_uv, lca_wz)
-									> informationReferenceTree->distanceInEdges(lca_uz, lca_vw)) {
+					if (informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+							> informationReferenceTree.distanceInEdges(lca_uw, lca_vz)
+							&& informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+									> informationReferenceTree.distanceInEdges(lca_uz, lca_vw)) {
 						aIdx = uIdx;
 						bIdx = vIdx;
 						cIdx = wIdx;
 						dIdx = zIdx; // ab|cd = uv|wz
-					} else if (informationReferenceTree->distanceInEdges(lca_uw, lca_vz)
-							> informationReferenceTree->distanceInEdges(lca_uv, lca_wz)
-							&& informationReferenceTree->distanceInEdges(lca_uw, lca_vz)
-									> informationReferenceTree->distanceInEdges(lca_uz, lca_vw)) {
+					} else if (informationReferenceTree.distanceInEdges(lca_uw, lca_vz)
+							> informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+							&& informationReferenceTree.distanceInEdges(lca_uw, lca_vz)
+									> informationReferenceTree.distanceInEdges(lca_uz, lca_vw)) {
 						aIdx = uIdx;
 						bIdx = wIdx;
 						cIdx = vIdx;
 						dIdx = zIdx; // ab|cd = uw|vz
-					} else if (informationReferenceTree->distanceInEdges(lca_uz, lca_vw)
-							> informationReferenceTree->distanceInEdges(lca_uv, lca_wz)
-							&& informationReferenceTree->distanceInEdges(lca_uz, lca_vw)
-									> informationReferenceTree->distanceInEdges(lca_uw, lca_vz)) {
+					} else if (informationReferenceTree.distanceInEdges(lca_uz, lca_vw)
+							> informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+							&& informationReferenceTree.distanceInEdges(lca_uz, lca_vw)
+									> informationReferenceTree.distanceInEdges(lca_uw, lca_vz)) {
 						aIdx = uIdx;
 						bIdx = zIdx;
 						cIdx = vIdx;
@@ -263,21 +255,21 @@ void QuartetScoreComputer<CINT>::computeQuartetScoresBifurcatingQuartets() {
 						continue;
 					}
 
-					std::tuple < CINT, CINT, CINT > quartetOccurrences = countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
+					std::tuple<CINT, CINT, CINT> quartetOccurrences = countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
 
 					{ //***** Code for QP-IC and EQP-IC scores start
-						std::pair < size_t, size_t > nodePair = nodePairForQuartet(aIdx, bIdx, cIdx, dIdx);
-						std::pair < size_t, size_t > nodePairSorted = std::pair<size_t, size_t>(
+						std::pair<size_t, size_t> nodePair = nodePairForQuartet(aIdx, bIdx, cIdx, dIdx);
+						std::pair<size_t, size_t> nodePairSorted = std::pair<size_t, size_t>(
 								std::min(nodePair.first, nodePair.second), std::max(nodePair.first, nodePair.second));
 
 						if (countBuffer.find(nodePairSorted) == countBuffer.end()) {
-							std::tuple < size_t, size_t, size_t > emptyTuple(0, 0, 0);
+							std::tuple<size_t, size_t, size_t> emptyTuple(0, 0, 0);
 							countBuffer[nodePairSorted] = emptyTuple;
 						}
 
-						size_t lcaIdx = informationReferenceTree->lowestCommonAncestorIdx(nodePairSorted.first,
+						size_t lcaIdx = informationReferenceTree.lowestCommonAncestorIdx(nodePairSorted.first,
 								nodePairSorted.second, rootIdx);
-						std::pair < size_t, size_t > innerLinks = get_path_inner_links(
+						std::pair<size_t, size_t> innerLinks = get_path_inner_links(
 								referenceTree.node_at(nodePairSorted.first),
 								referenceTree.node_at(nodePairSorted.second), referenceTree.node_at(lcaIdx));
 						size_t linkSubtree1 = referenceTree.link_at(innerLinks.first).next().index();
@@ -286,12 +278,12 @@ void QuartetScoreComputer<CINT>::computeQuartetScoresBifurcatingQuartets() {
 						size_t aLinkIdx = get_path_inner_links(referenceTree.node_at(nodePair.first),
 								referenceTree.node_at(aIdx),
 								referenceTree.node_at(
-										informationReferenceTree->lowestCommonAncestorIdx(nodePair.first, aIdx,
+										informationReferenceTree.lowestCommonAncestorIdx(nodePair.first, aIdx,
 												rootIdx))).first;
 						size_t cLinkIdx = get_path_inner_links(referenceTree.node_at(nodePair.second),
 								referenceTree.node_at(cIdx),
 								referenceTree.node_at(
-										informationReferenceTree->lowestCommonAncestorIdx(nodePair.second, cIdx,
+										informationReferenceTree.lowestCommonAncestorIdx(nodePair.second, cIdx,
 												rootIdx))).first;
 
 						size_t count_S1_S2_S3_S4;
@@ -299,36 +291,36 @@ void QuartetScoreComputer<CINT>::computeQuartetScoresBifurcatingQuartets() {
 						size_t count_S1_S4_S2_S3;
 						if ((aLinkIdx == linkSubtree1 && cLinkIdx == linkSubtree3)
 								|| (cLinkIdx == linkSubtree1 && aLinkIdx == linkSubtree3)) {
-							count_S1_S2_S3_S4 = std::get < 0 > (quartetOccurrences);
-							count_S1_S3_S2_S4 = std::get < 1 > (quartetOccurrences);
-							count_S1_S4_S2_S3 = std::get < 2 > (quartetOccurrences);
+							count_S1_S2_S3_S4 = std::get<0>(quartetOccurrences);
+							count_S1_S3_S2_S4 = std::get<1>(quartetOccurrences);
+							count_S1_S4_S2_S3 = std::get<2>(quartetOccurrences);
 						} else {
-							count_S1_S2_S3_S4 = std::get < 0 > (quartetOccurrences);
-							count_S1_S3_S2_S4 = std::get < 2 > (quartetOccurrences);
-							count_S1_S4_S2_S3 = std::get < 1 > (quartetOccurrences);
+							count_S1_S2_S3_S4 = std::get<0>(quartetOccurrences);
+							count_S1_S3_S2_S4 = std::get<2>(quartetOccurrences);
+							count_S1_S4_S2_S3 = std::get<1>(quartetOccurrences);
 						}
 
-						std::get < 0 > (countBuffer[nodePairSorted]) += count_S1_S2_S3_S4;
-						std::get < 1 > (countBuffer[nodePairSorted]) += count_S1_S3_S2_S4;
-						std::get < 2 > (countBuffer[nodePairSorted]) += count_S1_S4_S2_S3;
+						std::get<0>(countBuffer[nodePairSorted]) += count_S1_S2_S3_S4;
+						std::get<1>(countBuffer[nodePairSorted]) += count_S1_S3_S2_S4;
+						std::get<2>(countBuffer[nodePairSorted]) += count_S1_S4_S2_S3;
 					} //***** Code for QP-IC and EQP-IC scores end
 
-					double qic = log_score(std::get < 0 > (quartetOccurrences), std::get < 1 > (quartetOccurrences),
-							std::get < 2 > (quartetOccurrences));
+					double qic = log_score(std::get<0>(quartetOccurrences), std::get<1>(quartetOccurrences),
+							std::get<2>(quartetOccurrences));
 
 					// find path ends
-					size_t lca_ab = informationReferenceTree->lowestCommonAncestorIdx(aIdx, bIdx, rootIdx);
-					size_t lca_cd = informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, rootIdx);
+					size_t lca_ab = informationReferenceTree.lowestCommonAncestorIdx(aIdx, bIdx, rootIdx);
+					size_t lca_cd = informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, rootIdx);
 					size_t fromIdx, toIdx;
-					if (lca_cd == informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, lca_ab)) {
-						fromIdx = informationReferenceTree->lowestCommonAncestorIdx(aIdx, bIdx, lca_cd);
+					if (lca_cd == informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, lca_ab)) {
+						fromIdx = informationReferenceTree.lowestCommonAncestorIdx(aIdx, bIdx, lca_cd);
 						toIdx = lca_cd;
 					} else {
 						fromIdx = lca_ab;
-						toIdx = informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, lca_ab);
+						toIdx = informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, lca_ab);
 					}
 					// update the LQ-IC scores of the edges from fromIdx to toIdx
-					size_t lcaFromToIdx = informationReferenceTree->lowestCommonAncestorIdx(fromIdx, toIdx, rootIdx);
+					size_t lcaFromToIdx = informationReferenceTree.lowestCommonAncestorIdx(fromIdx, toIdx, rootIdx);
 					for (auto it : path_set(referenceTree.node_at(fromIdx), referenceTree.node_at(toIdx),
 							referenceTree.node_at(lcaFromToIdx))) {
 						if (it.is_lca())
@@ -343,13 +335,13 @@ void QuartetScoreComputer<CINT>::computeQuartetScoresBifurcatingQuartets() {
 
 	{ // ***** Code for QP-IC and EQP-IC scores, finalizing, start
 		for (auto kv : countBuffer) {
-			std::pair < size_t, size_t > nodePair = kv.first;
+			std::pair<size_t, size_t> nodePair = kv.first;
 			size_t uIdx = nodePair.first;
 			size_t vIdx = nodePair.second;
-			std::tuple < size_t, size_t, size_t > counts = kv.second;
+			std::tuple<size_t, size_t, size_t> counts = kv.second;
 
 			// compute the QP-IC score of the current metaquartet
-			double qpic = log_score(std::get < 0 > (counts), std::get < 1 > (counts), std::get < 2 > (counts));
+			double qpic = log_score(std::get<0>(counts), std::get<1>(counts), std::get<2>(counts));
 
 			// check if uIdx and vIdx are neighbors; if so, set QP-IC score of the edge connecting u and v
 			auto const& u_link = referenceTree.node_at(uIdx).link();
@@ -360,7 +352,7 @@ void QuartetScoreComputer<CINT>::computeQuartetScoresBifurcatingQuartets() {
 				QPICScores[v_link.edge().index()] = qpic;
 			}
 
-			size_t lcaIdx = informationReferenceTree->lowestCommonAncestorIdx(uIdx, vIdx, rootIdx);
+			size_t lcaIdx = informationReferenceTree.lowestCommonAncestorIdx(uIdx, vIdx, rootIdx);
 			// update the EQP-IC scores of the edges from uIdx to vIdx
 			for (auto it : path_set(referenceTree.node_at(uIdx), referenceTree.node_at(vIdx),
 					referenceTree.node_at(lcaIdx))) {
@@ -388,9 +380,9 @@ void QuartetScoreComputer<CINT>::processNodePair(size_t uIdx, size_t vIdx) {
 	p3 = 0;
 	// find metaquartet indices by {u,v}
 
-	size_t lcaIdx = informationReferenceTree->lowestCommonAncestorIdx(uIdx, vIdx, rootIdx);
+	size_t lcaIdx = informationReferenceTree.lowestCommonAncestorIdx(uIdx, vIdx, rootIdx);
 
-	std::pair < size_t, size_t > innerLinks = get_path_inner_links(referenceTree.node_at(uIdx),
+	std::pair<size_t, size_t> innerLinks = get_path_inner_links(referenceTree.node_at(uIdx),
 			referenceTree.node_at(vIdx), referenceTree.node_at(lcaIdx));
 
 	size_t linkSubtree1 = referenceTree.link_at(innerLinks.first).next().index();
@@ -428,26 +420,26 @@ void QuartetScoreComputer<CINT>::processNodePair(size_t uIdx, size_t vIdx) {
 
 					// process the quartet (a,b,c,d)
 					// We already know by the way we defined S1,S2,S3,S4 that the reference tree has the quartet topology ab|cd
-					std::tuple < CINT, CINT, CINT > quartetOccurrences = countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
-					p1 += std::get < 0 > (quartetOccurrences);
-					p2 += std::get < 1 > (quartetOccurrences);
-					p3 += std::get < 2 > (quartetOccurrences);
-					double qic = log_score(std::get < 0 > (quartetOccurrences), std::get < 1 > (quartetOccurrences),
-							std::get < 2 > (quartetOccurrences));
+					std::tuple<CINT, CINT, CINT> quartetOccurrences = countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
+					p1 += std::get<0>(quartetOccurrences);
+					p2 += std::get<1>(quartetOccurrences);
+					p3 += std::get<2>(quartetOccurrences);
+					double qic = log_score(std::get<0>(quartetOccurrences), std::get<1>(quartetOccurrences),
+							std::get<2>(quartetOccurrences));
 
 					// find path ends
-					size_t lca_ab = informationReferenceTree->lowestCommonAncestorIdx(aIdx, bIdx, rootIdx);
-					size_t lca_cd = informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, rootIdx);
+					size_t lca_ab = informationReferenceTree.lowestCommonAncestorIdx(aIdx, bIdx, rootIdx);
+					size_t lca_cd = informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, rootIdx);
 					size_t fromIdx, toIdx;
-					if (lca_cd == informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, lca_ab)) {
-						fromIdx = informationReferenceTree->lowestCommonAncestorIdx(aIdx, bIdx, lca_cd);
+					if (lca_cd == informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, lca_ab)) {
+						fromIdx = informationReferenceTree.lowestCommonAncestorIdx(aIdx, bIdx, lca_cd);
 						toIdx = lca_cd;
 					} else {
 						fromIdx = lca_ab;
-						toIdx = informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, lca_ab);
+						toIdx = informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, lca_ab);
 					}
 					// update the LQ-IC scores of the edges from fromIdx to toIdx
-					size_t lcaFromToIdx = informationReferenceTree->lowestCommonAncestorIdx(fromIdx, toIdx, rootIdx);
+					size_t lcaFromToIdx = informationReferenceTree.lowestCommonAncestorIdx(fromIdx, toIdx, rootIdx);
 					for (auto it : path_set(referenceTree.node_at(fromIdx), referenceTree.node_at(toIdx),
 							referenceTree.node_at(lcaFromToIdx))) {
 						if (it.is_lca())
@@ -526,35 +518,35 @@ void QuartetScoreComputer<CINT>::computeQuartetScoresMultifurcating() {
 					size_t wIdx = eulerTourLeaves[wLeafIdx];
 					size_t zIdx = eulerTourLeaves[zLeafIdx];
 					// find topology ab|cd of {u,v,w,z}
-					size_t lca_uv = informationReferenceTree->lowestCommonAncestorIdx(uIdx, vIdx, rootIdx);
-					size_t lca_uw = informationReferenceTree->lowestCommonAncestorIdx(uIdx, wIdx, rootIdx);
-					size_t lca_uz = informationReferenceTree->lowestCommonAncestorIdx(uIdx, zIdx, rootIdx);
-					size_t lca_vw = informationReferenceTree->lowestCommonAncestorIdx(vIdx, wIdx, rootIdx);
-					size_t lca_vz = informationReferenceTree->lowestCommonAncestorIdx(vIdx, zIdx, rootIdx);
-					size_t lca_wz = informationReferenceTree->lowestCommonAncestorIdx(wIdx, zIdx, rootIdx);
+					size_t lca_uv = informationReferenceTree.lowestCommonAncestorIdx(uIdx, vIdx, rootIdx);
+					size_t lca_uw = informationReferenceTree.lowestCommonAncestorIdx(uIdx, wIdx, rootIdx);
+					size_t lca_uz = informationReferenceTree.lowestCommonAncestorIdx(uIdx, zIdx, rootIdx);
+					size_t lca_vw = informationReferenceTree.lowestCommonAncestorIdx(vIdx, wIdx, rootIdx);
+					size_t lca_vz = informationReferenceTree.lowestCommonAncestorIdx(vIdx, zIdx, rootIdx);
+					size_t lca_wz = informationReferenceTree.lowestCommonAncestorIdx(wIdx, zIdx, rootIdx);
 
 					size_t aIdx, bIdx, cIdx, dIdx;
 
-					if (informationReferenceTree->distanceInEdges(lca_uv, lca_wz)
-							> informationReferenceTree->distanceInEdges(lca_uw, lca_vz)
-							&& informationReferenceTree->distanceInEdges(lca_uv, lca_wz)
-									> informationReferenceTree->distanceInEdges(lca_uz, lca_vw)) {
+					if (informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+							> informationReferenceTree.distanceInEdges(lca_uw, lca_vz)
+							&& informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+									> informationReferenceTree.distanceInEdges(lca_uz, lca_vw)) {
 						aIdx = uIdx;
 						bIdx = vIdx;
 						cIdx = wIdx;
 						dIdx = zIdx; // ab|cd = uv|wz
-					} else if (informationReferenceTree->distanceInEdges(lca_uw, lca_vz)
-							> informationReferenceTree->distanceInEdges(lca_uv, lca_wz)
-							&& informationReferenceTree->distanceInEdges(lca_uw, lca_vz)
-									> informationReferenceTree->distanceInEdges(lca_uz, lca_vw)) {
+					} else if (informationReferenceTree.distanceInEdges(lca_uw, lca_vz)
+							> informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+							&& informationReferenceTree.distanceInEdges(lca_uw, lca_vz)
+									> informationReferenceTree.distanceInEdges(lca_uz, lca_vw)) {
 						aIdx = uIdx;
 						bIdx = wIdx;
 						cIdx = vIdx;
 						dIdx = zIdx; // ab|cd = uw|vz
-					} else if (informationReferenceTree->distanceInEdges(lca_uz, lca_vw)
-							> informationReferenceTree->distanceInEdges(lca_uv, lca_wz)
-							&& informationReferenceTree->distanceInEdges(lca_uz, lca_vw)
-									> informationReferenceTree->distanceInEdges(lca_uw, lca_vz)) {
+					} else if (informationReferenceTree.distanceInEdges(lca_uz, lca_vw)
+							> informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+							&& informationReferenceTree.distanceInEdges(lca_uz, lca_vw)
+									> informationReferenceTree.distanceInEdges(lca_uw, lca_vz)) {
 						aIdx = uIdx;
 						bIdx = zIdx;
 						cIdx = vIdx;
@@ -564,24 +556,24 @@ void QuartetScoreComputer<CINT>::computeQuartetScoresMultifurcating() {
 						continue;
 					}
 
-					std::tuple < CINT, CINT, CINT > quartetOccurrences = countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
+					std::tuple<CINT, CINT, CINT> quartetOccurrences = countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
 
-					double qic = log_score(std::get < 0 > (quartetOccurrences), std::get < 1 > (quartetOccurrences),
-							std::get < 2 > (quartetOccurrences));
+					double qic = log_score(std::get<0>(quartetOccurrences), std::get<1>(quartetOccurrences),
+							std::get<2>(quartetOccurrences));
 
 					// find path ends
-					size_t lca_ab = informationReferenceTree->lowestCommonAncestorIdx(aIdx, bIdx, rootIdx);
-					size_t lca_cd = informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, rootIdx);
+					size_t lca_ab = informationReferenceTree.lowestCommonAncestorIdx(aIdx, bIdx, rootIdx);
+					size_t lca_cd = informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, rootIdx);
 					size_t fromIdx, toIdx;
-					if (lca_cd == informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, lca_ab)) {
-						fromIdx = informationReferenceTree->lowestCommonAncestorIdx(aIdx, bIdx, lca_cd);
+					if (lca_cd == informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, lca_ab)) {
+						fromIdx = informationReferenceTree.lowestCommonAncestorIdx(aIdx, bIdx, lca_cd);
 						toIdx = lca_cd;
 					} else {
 						fromIdx = lca_ab;
-						toIdx = informationReferenceTree->lowestCommonAncestorIdx(cIdx, dIdx, lca_ab);
+						toIdx = informationReferenceTree.lowestCommonAncestorIdx(cIdx, dIdx, lca_ab);
 					}
 					// update the LQ-IC scores of the edges from fromIdx to toIdx
-					size_t lcaFromToIdx = informationReferenceTree->lowestCommonAncestorIdx(fromIdx, toIdx, rootIdx);
+					size_t lcaFromToIdx = informationReferenceTree.lowestCommonAncestorIdx(fromIdx, toIdx, rootIdx);
 					for (auto it : path_set(referenceTree.node_at(fromIdx), referenceTree.node_at(toIdx),
 							referenceTree.node_at(lcaFromToIdx))) {
 						if (it.is_lca())
@@ -611,9 +603,16 @@ std::pair<size_t, size_t> QuartetScoreComputer<CINT>::subtreeLeafIndices(size_t 
  */
 // Code adapted from http://stackoverflow.com/questions/2513505/how-to-get-available-memory-c-g
 inline size_t getTotalSystemMemory() {
+#if defined( _WIN32 ) || defined(  _WIN64  )
+	MEMORYSTATUSEX status;
+	status.dwLength = sizeof(status);
+	GlobalMemoryStatusEx(&status);
+	return status.ullTotalPhys;
+#else
 	size_t pages = sysconf(_SC_PHYS_PAGES);
 	size_t page_size = sysconf(_SC_PAGE_SIZE);
 	return pages * page_size;
+#endif
 }
 
 /**
@@ -623,7 +622,8 @@ inline size_t getTotalSystemMemory() {
  * @param verboseOutput print some additional (debug) information
  */
 template<typename CINT>
-QuartetScoreComputer<CINT>::QuartetScoreComputer(Tree const &refTree, const std::string &evalTreesPath, size_t m, bool verboseOutput) {
+QuartetScoreComputer<CINT>::QuartetScoreComputer(Tree const &refTree, const std::string &evalTreesPath, size_t m,
+		bool verboseOutput, bool enforeSmallMem) {
 	referenceTree = refTree;
 	rootIdx = referenceTree.root_node().index();
 
@@ -632,8 +632,8 @@ QuartetScoreComputer<CINT>::QuartetScoreComputer(Tree const &refTree, const std:
 	std::cout << "There are " << m << " evaluation trees.\n";
 
 	std::cout << "Building subtree informations for reference tree..." << std::endl;
-	informationReferenceTree = make_unique < TreeInformation > (referenceTree);
 	// precompute subtree informations
+	informationReferenceTree.init(refTree);
 	linkToEulerLeafIndex.resize(referenceTree.link_count());
 	for (auto it : eulertour(referenceTree)) {
 		if (it.node().is_leaf()) {
@@ -646,35 +646,35 @@ QuartetScoreComputer<CINT>::QuartetScoreComputer(Tree const &refTree, const std:
 	std::cout << "Finished precomputing subtree informations in reference tree.\n";
 	std::cout << "The reference tree has " << n << " taxa.\n";
 
-	//estimate memory requirements for lookup table
-	size_t memoryLookup = n * n * n * n * sizeof(CINT);
-	//estimate memory requirements for few trees
-	size_t memoryFewTrees = m * n * 4 * sizeof(size_t);
+	//estimate memory requirements
+	size_t memoryLookupFast = n * n * n * n * sizeof(CINT);
+	size_t memoryLookup = (n * (n - 1) * (n - 2) * (n - 3) / 24) * 3 * sizeof(CINT) + sizeof(size_t);
 	size_t estimatedMemory = getTotalSystemMemory();
 
-	std::cout << "Estimated memory usages:" << std::endl;
-	std::cout << "  Lookup table: " << memoryLookup << std::endl;
-	std::cout << "  Distance and LCA approach: " << memoryFewTrees << std::endl;
+	std::cout << "Estimated memory usages (in bytes):" << std::endl;
+	std::cout << "  Runtime-efficient Lookup table: " << memoryLookupFast << std::endl;
+	std::cout << "  Memory-efficient Lookup table: " << memoryLookup << std::endl;
 	std::cout << "  Estimated available memory: " << estimatedMemory << std::endl;
 
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-	if (memoryLookup < estimatedMemory / 1.5) {
-		std::cout << "Using lookup table.\n";
-		quartetCounterLookup = make_unique < QuartetCounterLookup<CINT> > (refTree, evalTreesPath, m);
-		//quartetCounterLookup = make_unique<QuartetCounterLookupCacheOptimized>(refTree, evalTrees);
-		useLookupTable = true;
+	if (memoryLookup > estimatedMemory) {
+		throw std::runtime_error("Insufficient memory!");
+	}
+
+	if (enforeSmallMem || memoryLookupFast > 0.9 * estimatedMemory) {
+		std::cout << "Using memory-efficient Lookup table\n";
+		quartetCounterLookup = make_unique<QuartetCounterLookup<CINT> >(refTree, evalTreesPath, m, true);
 	} else {
-		std::cout << "Using distance and LCA approach.\n";
-		quartetCounterFewTrees = make_unique < QuartetCounterFewTrees<CINT> > (refTree, evalTreesPath);
-		useLookupTable = false;
+		std::cout << "Using runtime-efficient Lookup table\n";
+		quartetCounterLookup = make_unique<QuartetCounterLookup<CINT> >(refTree, evalTreesPath, m, false);
 	}
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
 	std::cout << "Finished counting quartets.\n";
-	std::cout << "It took: " << std::chrono::duration_cast < std::chrono::microseconds
-			> (end - begin).count() << " microseconds." << std::endl;
+	std::cout << "It took: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()
+			<< " microseconds." << std::endl;
 
 	begin = std::chrono::steady_clock::now();
 
@@ -706,6 +706,6 @@ QuartetScoreComputer<CINT>::QuartetScoreComputer(Tree const &refTree, const std:
 	end = std::chrono::steady_clock::now();
 
 	std::cout << "Finished computing scores.\n";
-	std::cout << "It took: " << std::chrono::duration_cast < std::chrono::microseconds
-			> (end - begin).count() << " microseconds." << std::endl;
+	std::cout << "It took: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()
+			<< " microseconds." << std::endl;
 }
