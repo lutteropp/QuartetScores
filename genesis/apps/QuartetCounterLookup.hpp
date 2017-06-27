@@ -83,10 +83,10 @@ void QuartetCounterLookup<CINT>::updateQuartetsThreeClades(size_t startLeafIndex
 					if (savemem) {
 						auto& tuple = lookupTable.get_tuple(a, a2, b, c);
 						size_t tupleIdx = lookupTable.tuple_index(a, a2, b, c);
-#pragma omp atomic
+//#pragma omp atomic
 						tuple[tupleIdx]++;
 					} else {
-#pragma omp atomic
+//#pragma omp atomic
 						lookupTableFast[CO(a, a2, b, c)]++;
 					}
 
