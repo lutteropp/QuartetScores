@@ -6,6 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <omp.h>
 
 #include <chrono>
 
@@ -32,24 +33,26 @@ size_t countEvalTrees(const std::string &evalTreesPath) {
  */
 int main(int argc, char* argv[]) {
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-	// TODO: Something like --nthreads would also be nice to have.
 
 	bool verbose = false;
 	bool savemem = false;
 	std::string pathToReferenceTree;
 	std::string pathToEvaluationTrees;
 	std::string outputFilePath;
+	size_t nThreads = 0;
 
 	try {
 		TCLAP::CmdLine cmd("Compute quartet scores", ' ', "1.0");
 		TCLAP::ValueArg<std::string> refArg("r", "ref", "Path to the reference tree", true, "", "string");
 		TCLAP::ValueArg<std::string> evalArg("e", "eval", "Path to the reference trees", true, "", "string");
 		TCLAP::ValueArg<std::string> outputArg("o", "output", "Path to the output file", true, "", "string");
+		TCLAP::ValueArg<size_t> threadsArg("t", "threads", "Maximum number of threads to use", false, 0, "uint");
 		TCLAP::SwitchArg verboseArg("v", "verbose", "Verbose mode", false);
 		TCLAP::SwitchArg savememArg("s", "savemem", "Consume less memory, but with the cost of increased runtime", false);
 		cmd.add(refArg);
 		cmd.add(evalArg);
 		cmd.add(outputArg);
+		cmd.add(threadsArg);
 		cmd.add(verboseArg);
 		cmd.add(savememArg);
 		cmd.parse(argc, argv);
@@ -57,6 +60,7 @@ int main(int argc, char* argv[]) {
 		pathToReferenceTree = refArg.getValue();
 		pathToEvaluationTrees = evalArg.getValue();
 		outputFilePath = outputArg.getValue();
+		nThreads = threadsArg.getValue();
 		verbose = verboseArg.getValue();
 		savemem = savememArg.getValue();
 	} catch (TCLAP::ArgException &e) // catch any exceptions
@@ -69,6 +73,10 @@ int main(int argc, char* argv[]) {
 	if (infile.good()) {
 		std::cout << "ERROR: The specified output file already exists.\n";
 		return 1;
+	}
+
+	if (nThreads > 0) {
+		omp_set_num_threads(nThreads);
 	}
 
 	//read trees
