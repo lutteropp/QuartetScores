@@ -1,3 +1,6 @@
 [submodule "genesis"]
 	path = genesis
 	url = https://github.com/lczech/genesis.git
+[submodule "tclap"]
+	path = tclap
+	url = https://github.com/eile/tclap.git
