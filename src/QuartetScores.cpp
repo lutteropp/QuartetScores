@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
 	try {
 		TCLAP::CmdLine cmd("Compute quartet scores", ' ', "1.0");
 		TCLAP::ValueArg<std::string> refArg("r", "ref", "Path to the reference tree", true, "", "string");
-		TCLAP::ValueArg<std::string> evalArg("e", "eval", "Path to the reference trees", true, "", "string");
+		TCLAP::ValueArg<std::string> evalArg("e", "eval", "Path to the evaluation trees", true, "", "string");
 		TCLAP::ValueArg<std::string> outputArg("o", "output", "Path to the output file", true, "", "string");
 		TCLAP::ValueArg<size_t> threadsArg("t", "threads", "Maximum number of threads to use", false, 0, "uint");
 		TCLAP::SwitchArg verboseArg("v", "verbose", "Verbose mode", false);
@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
 		savemem = savememArg.getValue();
 	} catch (TCLAP::ArgException &e) // catch any exceptions
 	{
-		std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
+		std::cerr << "ERROR: " << e.error() << " for arg " << e.argId() << std::endl;
 		return 1;
 	}
 
@@ -78,11 +78,14 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	#ifdef GENESIS_OPENMP
-		if (nThreads > 0) {
+	if (nThreads > 0) {
+		#ifdef GENESIS_OPENMP
 			omp_set_num_threads(nThreads);
-		}
-	#endif
+		#else
+		    std::cerr << "Warning: You specified to use multiple threads, but compiled without OpenMP. "
+			          << "Thus, we can only use one thread." << std::endl;
+		#endif
+	}
 
 	//read trees
 	DefaultTreeNewickReader reader;
