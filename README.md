@@ -16,11 +16,12 @@ Alternatively, if you use Git, you can clone the Git repository:
 
     git clone --recursive https://github.com/algomaus/QuartetScores.git
 
-Then, in order to compile the program, run
+Then, in order to compile the program, change to the directory that you got via unzipping
+or cloning the repository, and build the program:
 
+    cd path/to/QuartetScores/
     make
 
-in the main directory that you got via unzipping or cloning the repository.
 If needed, this will also download any dependencies.
 
 Requirements:
@@ -29,16 +30,19 @@ Requirements:
  *  A fairly up-to-date C++11 compiler, e.g., [clang++](http://clang.llvm.org/) 3.6 or higher,
     or [GCC](https://gcc.gnu.org/) 4.9 or higher.
 
-The compiled program is then located in `bin`.
+On typical Linux distributions (e.g., Ubuntu), those programs can be installed via
 
+    sudo apt-get install build-essential cmake
+
+The compiled program is then located in `bin`.
 
 Usage
 -------------------------
 
 The program can be called as follows:
 
-`./QuartetScores  [-s] [-v] [-t <uint>] -o <string> -e <string> -r <string> [--version] [-h]`
-
+    cd path/to/QuartetScores/bin/
+    ./QuartetScores  [-s] [-v] [-t <uint>] -o <string> -e <string> -r <string> [--version] [-h]
 
 Where:
 
