@@ -34,14 +34,17 @@ On typical Linux distributions (e.g., Ubuntu), those programs can be installed v
 
     sudo apt-get install build-essential cmake
 
-The compiled program is then located in `bin`.
+The compiled program is located in `bin`. To change to that directory, call:
+
+    cd path/to/QuartetScores/bin/
+
+Then, the program can be called as described in the following.
 
 Usage
 -------------------------
 
-The program can be called as follows:
+The command line parameters of the program are:
 
-    cd path/to/QuartetScores/bin/
     ./QuartetScores  [-s] [-v] [-t <uint>] -o <string> -e <string> -r <string> [--version] [-h]
 
 Where:
