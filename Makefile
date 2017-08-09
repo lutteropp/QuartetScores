@@ -49,4 +49,5 @@ clean:
 	@echo "Running clean..."
 	@rm -rf bin
 	@rm -rf build
+	@rm -rf genesis/bin
 .PHONY: clean
