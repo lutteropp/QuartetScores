@@ -50,10 +50,11 @@ option ( BUILD_STATIC  "Build the static version of the executable." ON )
 
 if( BUILD_STATIC AND NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     string(ASCII 27 Esc)
-    message( STATUS "${Esc}[33m"
-        "Compiler is not GNU. This might cause trouble with statically linking system libraries. "
-        "If the compilation fails with some linking error, try a different compiler, or try to not "
-        "build statically by deactivating the CMake option 'BUILD_STATIC'. See Readme for details."
+    message( STATUS "${Esc}[31m"
+        "Compiler is not GCC. This might cause trouble with statically linking system libraries "
+        "on Linux systems. If the compilation fails with some linking error, try a different compiler, "
+        "or try to not build statically by deactivating the CMake option 'BUILD_STATIC'. "
+        "See BUILD.md for details."
     "${Esc}[0m" )
 endif()
 
@@ -97,6 +98,16 @@ set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${GENESIS_EXE_LINKER_FLAG
 
 # Add Tclap as dependency. It's header-only, so this is easy.
 include_directories( "tclap/include" )
+
+# Genesis export the OpenMP variable. We use it to check and give advice in case it is not found.
+if( NOT OPENMP_FOUND )
+    string(ASCII 27 Esc)
+    message( STATUS "${Esc}[31m"
+        "Could not find OpenMP. This results in a considerably slower runtime for the program. Try "
+        "to use a different compiler. Alternatively, if you are sure your compiler supports OpenMP, "
+        "you can add the needed compiler flags to the CMake script. See BUILD.md for details."
+    "${Esc}[0m" )
+endif()
 
 # ------------------------------------------------------------------------------
 #   Sources
