@@ -12,7 +12,7 @@ We currently provide binaries for Linux and Mac systems,
 which are available at the [Releases Page](https://github.com/algomaus/QuartetScores/releases).
 
 Please try those first. If they do not work, you find detailed build instructions in the
-[BUILD.md](https://github.com/algomaus/QuartetScores/blob/master/README.md) document.
+[BUILD.md](https://github.com/algomaus/QuartetScores/blob/master/BUILD.md) document.
 
 Command Line Options
 -------------------------------
