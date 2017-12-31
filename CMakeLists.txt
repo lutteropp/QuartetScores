@@ -68,7 +68,7 @@ set (WARN_FLAGS              "-Wall -Wextra -Wno-unknown-pragmas -pedantic -peda
 set (CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -std=c++11 ${WARN_FLAGS}")
 
 set (CMAKE_CXX_FLAGS_DEBUG   "-O2 -g -ggdb3 -DDEBUG -D_GLIBCXX_DEBUG")
-set (CMAKE_CXX_FLAGS_RELEASE "-O2       -DNDEBUG")
+set (CMAKE_CXX_FLAGS_RELEASE "-O0 -g -DDEBUG ")
 
 IF(BUILD_STATIC)
     # Use different ways of telling CMake to build static, just to be sure.

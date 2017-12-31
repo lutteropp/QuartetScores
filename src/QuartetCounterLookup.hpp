@@ -9,11 +9,15 @@
 #include "quartet_lookup_table.hpp"
 #include <unordered_map>
 #include <cstdint>
+#include <iostream>
+#include <fstream>
 
 using namespace genesis;
 using namespace tree;
 using namespace utils;
 using namespace std;
+
+template class std::vector<size_t>;
 
 #define CO(a,b,c,d) (a) * n_cube + (b) * n_square + (c) * n + (d)
 
@@ -42,7 +46,7 @@ private:
 
 	CINT lookupQuartetCount(size_t aIdx, size_t bIdx, size_t cIdx, size_t dIdx) const;
 
-	std::vector<CINT> lookupTableFast; /**> larger O(n^4) lookup table storing the count of each quartet topology */
+	std::vector<size_t> lookupTableFast; /**> larger O(n^4) lookup table storing the count of each quartet topology */
 	QuartetLookupTable<CINT> lookupTable; /**> smaller O(n^4) lookup table storing the count of each quartet topology */
 
 	size_t n; /**> number of taxa in the reference tree */
@@ -87,7 +91,9 @@ void QuartetCounterLookup<CINT>::updateQuartetsThreeClades(size_t startLeafIndex
 						tuple[tupleIdx]++;
 					} else {
 //#pragma omp atomic
-						lookupTableFast[CO(a, a2, b, c)]++;
+						
+CINT tmp = CO(a, a2, b, c);
+lookupTableFast[tmp]++;
 					}
 
 					cLeafIndex = (cLeafIndex + 1) % eulerTourLeaves.size();
@@ -202,6 +208,10 @@ void QuartetCounterLookup<CINT>::countQuartets(const std::string &evalTreesPath,
 	utils::InputStream instream(utils::make_unique<utils::FileInputSource>(evalTreesPath));
 	auto itTree = NewickInputIterator(instream, DefaultTreeNewickReader());
 	size_t i = 0;
+	
+	std::ofstream measures;
+	measures.open("measures.txt");
+
 	while (itTree) { // iterate over the set of evaluation trees
 		Tree const& tree = *itTree;
 
@@ -235,6 +245,10 @@ void QuartetCounterLookup<CINT>::countQuartets(const std::string &evalTreesPath,
 		++itTree;
 		++i;
 	}
+	for(auto& it: lookupTableFast){
+		measures << it << std::endl;
+	}
+	measures.close();
 }
 
 /**
@@ -266,10 +280,19 @@ QuartetCounterLookup<CINT>::QuartetCounterLookup(Tree const &refTree, const std:
 	}
 	countQuartets(evalTreesPath, m, taxonToReferenceID);
 	if (savemem) {
-		std::cout << "lookup table size in bytes: " << lookupTable.size() << "\n";
+		std::cout << "lookup table(savemem) size in bytes: " << lookupTable.size() << "\n";
 	} else {
-		std::cout << "lookup table size in bytes: " << lookupTableFast.size() * sizeof(CINT) << "\n";
+		std::cout << "lookup table(fast) size in bytes: " << lookupTableFast.size() * sizeof(CINT) << "\n";
 	}
+
+	std::ofstream outputfile;
+	outputfile.open("output_Scores.csv");
+	for(size_t i = 0; i < lookupTableFast.size(); i++){
+		outputfile << i << "," << lookupTableFast[i] << std::endl;
+	}
+	outputfile.close();
+
+
 }
 
 /**
