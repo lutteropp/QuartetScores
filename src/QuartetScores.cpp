@@ -8,7 +8,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <ctime>
 
 #ifdef GENESIS_OPENMP
 #	include <omp.h>
@@ -44,8 +43,6 @@ int main(int argc, char* argv[]) {
 	std::string pathToEvaluationTrees;
 	std::string outputFilePath;
 	size_t nThreads = 0;
-	std::ofstream outfile;
-  	outfile.open("output_QuartetScores.csv", std::ios_base::app);
 
 	try {
 		TCLAP::CmdLine cmd("Compute quartet scores", ' ', "1.0");
@@ -143,9 +140,8 @@ int main(int argc, char* argv[]) {
 	writer.to_file(referenceTree, outputFilePath);
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	
-	time_t ltime = time(0);
-	outfile  << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()
-			<< "," << nThreads << "," << asctime(localtime(&ltime)) << std::endl;
+
+	std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()
+			<< " microseconds." << std::endl;
 	return 0;
 }
