@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdint>
 #include <vector>
+#include <stdexcept>
 
 #ifdef USE_STXXL
 #include <stxxl/vector>
@@ -77,7 +78,9 @@ public:
 
 	QuartetTuple const& get_tuple(size_t a, size_t b, size_t c, size_t d) const {
 		size_t const id = lookup_index_(a, b, c, d);
-		assert(id < quartet_lookup_.size());
+		if (id >= quartet_lookup_.size()) {
+			throw std::runtime_error("id = " + std::to_string(id) + ", but quartet_lookup_.size() = " + std::to_string(quartet_lookup_.size()));
+		}
 		return quartet_lookup_[id];
 	}
 
