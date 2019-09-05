@@ -100,7 +100,7 @@ set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${GENESIS_EXE_LINKER_FLAG
 include_directories( "tclap/include" )
 
 # Genesis export the OpenMP variable. We use it to check and give advice in case it is not found.
-if( NOT OPENMP_FOUND )
+if( NOT ${OPENMP_FOUND} )
     string(ASCII 27 Esc)
     message( STATUS "${Esc}[31m"
         "Could not find OpenMP. This results in a considerably slower runtime for the program. Try "
