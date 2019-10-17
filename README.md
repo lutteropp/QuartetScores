@@ -4,6 +4,7 @@ QuartetScores
 Code for computing various support scores for internodes.
 
 See http://www.biorxiv.org/content/early/2017/07/27/168526 for the preprint.
+EDIT: The paper has now been published in Systematic Biology: https://academic.oup.com/sysbio/advance-article/doi/10.1093/sysbio/syz058/5556115
 
 Download
 -------------------------------
