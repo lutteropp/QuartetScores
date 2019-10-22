@@ -7,7 +7,7 @@ See http://www.biorxiv.org/content/early/2017/07/27/168526 for the preprint.
 
 EDIT: The paper has now been published in Systematic Biology: https://academic.oup.com/sysbio/advance-article/doi/10.1093/sysbio/syz058/5556115
 
-If you can not find our supplementary text, please download it from here:
+If you cannot find our supplementary text, please download it from here:
 https://github.com/lutteropp/QuartetScores/issues/4
 
 Download
