@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fstream>
 
 #if defined( _WIN32 ) || defined(  _WIN64  )
 #include <windows.h>
@@ -47,6 +48,7 @@ public:
 	std::vector<double> getLQICScores();
 	std::vector<double> getQPICScores();
 	std::vector<double> getEQPICScores();
+	void printRawQICScores(Tree const& refTree, const std::string& rawPath);
 private:
 	double log_score(size_t q1, size_t q2, size_t q3);
 	void computeQuartetScoresBifurcating();
@@ -616,6 +618,75 @@ inline size_t getTotalSystemMemory() {
 	size_t page_size = sysconf(_SC_PAGE_SIZE);
 	return pages * page_size;
 #endif
+}
+
+template<typename CINT>
+void QuartetScoreComputer<CINT>::printRawQICScores(Tree const& refTree, const std::string& rawPath) {
+	std::ofstream outfile(rawPath);
+	// Process all quartets
+	for (size_t uLeafIdx = 0; uLeafIdx < eulerTourLeaves.size(); uLeafIdx++) {
+		for (size_t vLeafIdx = uLeafIdx + 1; vLeafIdx < eulerTourLeaves.size(); vLeafIdx++) {
+			for (size_t wLeafIdx = vLeafIdx + 1; wLeafIdx < eulerTourLeaves.size(); wLeafIdx++) {
+				for (size_t zLeafIdx = wLeafIdx + 1; zLeafIdx < eulerTourLeaves.size(); zLeafIdx++) {
+					size_t uIdx = eulerTourLeaves[uLeafIdx];
+					size_t vIdx = eulerTourLeaves[vLeafIdx];
+					size_t wIdx = eulerTourLeaves[wLeafIdx];
+					size_t zIdx = eulerTourLeaves[zLeafIdx];
+					// find topology ab|cd of {u,v,w,z}
+					size_t lca_uv = informationReferenceTree.lowestCommonAncestorIdx(uIdx, vIdx, rootIdx);
+					size_t lca_uw = informationReferenceTree.lowestCommonAncestorIdx(uIdx, wIdx, rootIdx);
+					size_t lca_uz = informationReferenceTree.lowestCommonAncestorIdx(uIdx, zIdx, rootIdx);
+					size_t lca_vw = informationReferenceTree.lowestCommonAncestorIdx(vIdx, wIdx, rootIdx);
+					size_t lca_vz = informationReferenceTree.lowestCommonAncestorIdx(vIdx, zIdx, rootIdx);
+					size_t lca_wz = informationReferenceTree.lowestCommonAncestorIdx(wIdx, zIdx, rootIdx);
+
+					size_t aIdx, bIdx, cIdx, dIdx;
+
+					if (informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+							> informationReferenceTree.distanceInEdges(lca_uw, lca_vz)
+							&& informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+									> informationReferenceTree.distanceInEdges(lca_uz, lca_vw)) {
+						aIdx = uIdx;
+						bIdx = vIdx;
+						cIdx = wIdx;
+						dIdx = zIdx; // ab|cd = uv|wz
+					} else if (informationReferenceTree.distanceInEdges(lca_uw, lca_vz)
+							> informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+							&& informationReferenceTree.distanceInEdges(lca_uw, lca_vz)
+									> informationReferenceTree.distanceInEdges(lca_uz, lca_vw)) {
+						aIdx = uIdx;
+						bIdx = wIdx;
+						cIdx = vIdx;
+						dIdx = zIdx; // ab|cd = uw|vz
+					} else if (informationReferenceTree.distanceInEdges(lca_uz, lca_vw)
+							> informationReferenceTree.distanceInEdges(lca_uv, lca_wz)
+							&& informationReferenceTree.distanceInEdges(lca_uz, lca_vw)
+									> informationReferenceTree.distanceInEdges(lca_uw, lca_vz)) {
+						aIdx = uIdx;
+						bIdx = zIdx;
+						cIdx = vIdx;
+						dIdx = wIdx; // ab|cd = uz|vw
+					} else {
+						// else, we have a multifurcation and the quartet has none of these three topologies. In this case, ignore the quartet.
+						continue;
+					}
+
+					std::tuple<CINT, CINT, CINT> quartetOccurrences = countQuartetOccurrences(aIdx, bIdx, cIdx, dIdx);
+
+					double qic = log_score(std::get<0>(quartetOccurrences), std::get<1>(quartetOccurrences),
+							std::get<2>(quartetOccurrences));
+
+					std::string aLabel = refTree.node_at(aIdx).data<DefaultNodeData>().name;
+					std::string bLabel = refTree.node_at(bIdx).data<DefaultNodeData>().name;
+					std::string cLabel = refTree.node_at(cIdx).data<DefaultNodeData>().name;
+					std::string dLabel = refTree.node_at(dIdx).data<DefaultNodeData>().name;
+
+					outfile << "(" << aLabel << "," << bLabel << "|" << cLabel << "," << dLabel << "): " << qic << "\n";
+				}
+			}
+		}
+	}
+	outfile.close();
 }
 
 /**

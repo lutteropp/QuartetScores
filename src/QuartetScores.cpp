@@ -42,19 +42,24 @@ int main(int argc, char* argv[]) {
 	std::string pathToReferenceTree;
 	std::string pathToEvaluationTrees;
 	std::string outputFilePath;
+	std::string rawFilePath;
 	size_t nThreads = 0;
 
 	try {
 		TCLAP::CmdLine cmd("Compute quartet scores", ' ', "1.0");
 		TCLAP::ValueArg<std::string> refArg("r", "ref", "Path to the reference tree", true, "", "string");
 		TCLAP::ValueArg<std::string> evalArg("e", "eval", "Path to the evaluation trees", true, "", "string");
-		TCLAP::ValueArg<std::string> outputArg("o", "output", "Path to the output file", true, "", "string");
+		TCLAP::ValueArg<std::string> outputArg("o", "output", "Path to the annotated newick output file (for lqic/qpic/eqpic scores)", true,
+				"", "string");
+		TCLAP::ValueArg<std::string> rawArg("q", "qic", "Path to the file where to write the raw QIC scores for each quartet", false, "",
+				"string");
 		TCLAP::ValueArg<size_t> threadsArg("t", "threads", "Maximum number of threads to use", false, 0, "uint");
 		TCLAP::SwitchArg verboseArg("v", "verbose", "Verbose mode", false);
 		TCLAP::SwitchArg savememArg("s", "savemem", "Consume less memory, but with the cost of increased runtime", false);
 		cmd.add(refArg);
 		cmd.add(evalArg);
 		cmd.add(outputArg);
+		cmd.add(rawArg);
 		cmd.add(threadsArg);
 		cmd.add(verboseArg);
 		cmd.add(savememArg);
@@ -63,6 +68,7 @@ int main(int argc, char* argv[]) {
 		pathToReferenceTree = refArg.getValue();
 		pathToEvaluationTrees = evalArg.getValue();
 		outputFilePath = outputArg.getValue();
+		rawFilePath = rawArg.getValue();
 		nThreads = threadsArg.getValue();
 		verbose = verboseArg.getValue();
 		savemem = savememArg.getValue();
@@ -79,12 +85,12 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (nThreads > 0) {
-		#ifdef GENESIS_OPENMP
-			omp_set_num_threads(nThreads);
-		#else
-		    std::cerr << "Warning: You specified to use multiple threads, but compiled without OpenMP. "
-			          << "Thus, we can only use one thread." << std::endl;
-		#endif
+#ifdef GENESIS_OPENMP
+		omp_set_num_threads(nThreads);
+#else
+		std::cerr << "Warning: You specified to use multiple threads, but compiled without OpenMP. " << "Thus, we can only use one thread."
+				<< std::endl;
+#endif
 	}
 
 	//read trees
@@ -111,21 +117,33 @@ int main(int argc, char* argv[]) {
 		lqic = qsc.getLQICScores();
 		qpic = qsc.getQPICScores();
 		eqpic = qsc.getEQPICScores();
+		if (!rawFilePath.empty()) {
+			qsc.printRawQICScores(referenceTree, rawFilePath);
+		}
 	} else if (m < (size_t(1) << 16)) {
 		QuartetScoreComputer<uint16_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose, savemem);
 		lqic = qsc.getLQICScores();
 		qpic = qsc.getQPICScores();
 		eqpic = qsc.getEQPICScores();
+		if (!rawFilePath.empty()) {
+			qsc.printRawQICScores(referenceTree, rawFilePath);
+		}
 	} else if (m < (size_t(1) << 32)) {
 		QuartetScoreComputer<uint32_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose, savemem);
 		lqic = qsc.getLQICScores();
 		qpic = qsc.getQPICScores();
 		eqpic = qsc.getEQPICScores();
+		if (!rawFilePath.empty()) {
+			qsc.printRawQICScores(referenceTree, rawFilePath);
+		}
 	} else {
 		QuartetScoreComputer<uint64_t> qsc(referenceTree, pathToEvaluationTrees, m, verbose, savemem);
 		lqic = qsc.getLQICScores();
 		qpic = qsc.getQPICScores();
 		eqpic = qsc.getEQPICScores();
+		if (!rawFilePath.empty()) {
+			qsc.printRawQICScores(referenceTree, rawFilePath);
+		}
 	}
 	// Create the writer and assign values.
 	auto writer = QuartetTreeNewickWriter();
@@ -141,7 +159,7 @@ int main(int argc, char* argv[]) {
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
-	std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()
-			<< " microseconds." << std::endl;
+	std::cout << "Elapsed time: " << std::chrono::duration_cast < std::chrono::microseconds
+			> (end - begin).count() << " microseconds." << std::endl;
 	return 0;
 }
