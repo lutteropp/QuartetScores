@@ -24,7 +24,7 @@ Command Line Options
 
 The command line options of the program are:
 
-    ./QuartetScores  [-s] [-v] [-t <number>] -r <file_path> -e <file_path> -o <file_path> [--version] [-h]
+    ./QuartetScores  [-s] [-v] [-t <number>] -r <file_path> -e <file_path> -o <file_path> [-q <file_path>] [--version] [-h]
 
 Where:
 
