@@ -34,7 +34,7 @@ Where:
 
 `-o <file_path>`,  `--output <file_path>`: (required)  Path to the annotated newick output file (for LQIC/QPIC/EQPIC scores)
 
-`-q <file_path>`,  `--qic <file_path>`: (optinal) Path to the file where to write the raw QIC scores for each quartet
+`-q <file_path>`,  `--qic <file_path>`: (optional) Path to the file where to write the raw QIC scores for each quartet
 
 `-s`, `--savemem`: Consume less memory, but with the cost of increased runtime (~50% more)
 
