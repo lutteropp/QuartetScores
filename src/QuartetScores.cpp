@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
 	size_t nThreads = 0;
 
 	try {
-		TCLAP::CmdLine cmd("Compute quartet scores", ' ', "1.0");
+		TCLAP::CmdLine cmd("Compute quartet scores", ' ', "1.0.1");
 		TCLAP::ValueArg<std::string> refArg("r", "ref", "Path to the reference tree", true, "", "string");
 		TCLAP::ValueArg<std::string> evalArg("e", "eval", "Path to the evaluation trees", true, "", "string");
 		TCLAP::ValueArg<std::string> outputArg("o", "output", "Path to the annotated newick output file (for lqic/qpic/eqpic scores)", true,
