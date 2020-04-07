@@ -45,7 +45,7 @@ ENDIF()
 # Download a fixed release instead of the current master,
 # so that we know that it works for us.
 ExternalProject_Add( tclap
-    URL https://github.com/mirror/tclap
+    URL https://github.com/mirror/tclap/archive/3627d9402e529770df9b0edf2aa8c0e0d6c6bb41.zip
     ${CMAKE_DOWNLOAD_PROGRESS}
     SOURCE_DIR        "${PROJECT_SOURCE_DIR}/tclap"
     BINARY_DIR        "${PROJECT_SOURCE_DIR}/tclap"
